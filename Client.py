@@ -2,8 +2,9 @@ import socket
 
 
 class Client:
-    def __init__(self, name):
+    def __init__(self, name, _id):
         self.name = name
+        self._id = _id
 
     def connect(self):
         pass
