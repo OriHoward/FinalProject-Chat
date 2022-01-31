@@ -1,7 +1,6 @@
 import socket
 import threading
 
-from Client import Client
 
 
 FORMAT = 'utf-8'
@@ -13,7 +12,6 @@ ADDR = (IP, PORT)
 
 class Server:
     def __init__(self):
-        self.clients: dict[Client] = {}
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind(ADDR)
 
