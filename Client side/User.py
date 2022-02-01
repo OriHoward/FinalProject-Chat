@@ -1,5 +1,8 @@
 import socket
 
+from Actions import Actions
+from socketHandler import socketHandler
+
 FORMAT = 'utf-8'
 HEADER = 64
 PORT = 55000
@@ -7,7 +10,7 @@ PREFIX = '/'
 
 
 class User:
-    def __init__(self, user_name: str = ""):
+    def __init__(self, user_name: str = None):
         self.user_name = user_name
         self.ip = socket.gethostbyname(socket.gethostname())
         self.address = (self.ip, PORT)
@@ -15,33 +18,17 @@ class User:
 
     def connect(self):
         self.server.connect(self.address)
-        self.send_msg(self.user_name)
-
+        socketHandler.send_msg(self.user_name, self.server)
 
     def disconnect(self):
-        pass
+        self.server.send(Actions.DISCONNECT.value)
 
     def get_users(self):
-        self.server.send(bytes(200))
-        msg = self.get_msg()
-
-    #
-    # self.client.recv(SIZE OF LIST)
-    # self.client.recv(THE LIST ITSELF)
-
-    def get_msg(self):
-        msg_length = self.server.recv(HEADER).decode(FORMAT)
-        if msg_length:
-            msg_length = int(msg_length)
-            return self.server.recv(msg_length).decode(FORMAT)
-
-    def send_msg(self, msg):
-        message = msg.encode(FORMAT)
-        msg_length = len(message)
-        send_length = str(msg_length).encode(FORMAT)
-        send_length += b' ' * (HEADER - len(send_length))  # adding padding to fill the 64 bytes
-        self.server.send(send_length)
-        self.server.send(message)
+        self.server.send(Actions.USER_LIST.value)
+        clients_list: str= socketHandler.get_msg(self.server)
+        print(clients_list)
+        # for name in clients_list:
+        #     print(name)
 
     def action_received(self, msg: str):
         if msg[0] == PREFIX:
@@ -54,4 +41,5 @@ class User:
             self.send_msg_to_all()
 
     def send_msg_to_all(self):
+        ## passing as a string
         pass

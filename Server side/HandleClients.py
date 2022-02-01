@@ -18,9 +18,13 @@ class HandleClients:
 
 
     # def get_users(self):
-    #     print("connected users:")
+    #     print("Users online:")
     #     for client in self.clients.values():
-    #         print(f"name: {client.name}, id: {client._id}")
+    #         print(f"name: {client.user_name}")
+
+    def get_clients(self):
+        return self.clients.keys()
+
 
     #
     # def send_message_to_all(self, msg):
