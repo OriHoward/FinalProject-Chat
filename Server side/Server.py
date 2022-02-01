@@ -21,6 +21,7 @@ class Server:
         connected = True
         while connected:
             msg = self.get_msg(conn)
+            #todo - ENUM CLASS for action numbers, switch case on msg - sending to handler functions according to the number
             if msg == "DISCONNECT":
                 connected = False
             print(f"[{addr}] {msg}")
@@ -42,3 +43,11 @@ class Server:
         if msg_length:
             msg_length = int(msg_length)
             return conn.recv(msg_length).decode(FORMAT)
+
+    def send_msg(self, msg):
+        message = msg.encode(FORMAT)
+        msg_length = len(message)
+        send_length = str(msg_length).encode(FORMAT)
+        send_length += b' ' * (HEADER - len(send_length))  # adding padding to fill the 64 bytes
+        self.server.send(send_length)
+        self.server.send(message)
