@@ -1,6 +1,7 @@
 import socket
-from http import client
+
 from Client import Client
+from socketHandler import socketHandler
 
 FORMAT = 'utf-8'
 HEADER = 64
@@ -16,27 +17,16 @@ class HandleClients:
     def add_client(self, client: Client):
         self.clients[client.user_name] = client
 
-
-    # def get_users(self):
-    #     print("Users online:")
-    #     for client in self.clients.values():
-    #         print(f"name: {client.user_name}")
-
     def get_clients(self):
         return self.clients.keys()
 
+    def send_all(self, msg, sender_client: Client):
+        for user_name, client in self.clients:
+            if user_name != sender_client.user_name:
+                socketHandler.send_msg(msg, client.client_socket)
 
-    #
-    # def send_message_to_all(self, msg):
-    #     pass
-    #
-    # def disconnect(self, user: User):
-    #     self.send_msg_to_server(user, "DISCONNECT")
+    def send_to(self, msg, from_client: Client, to_client: Client):
+        pass
 
-    # def send_msg_to_server(self, user: User, msg):
-    #     message = msg.encode(FORMAT)
-    #     msg_length = len(message)
-    #     send_length = str(msg_length).encode(FORMAT)
-    #     send_length += b' ' * (HEADER - len(send_length))  # adding padding to fill the 64 bytes
-    #     user.client.send(send_length)
-    #     user.client.send(message)
+    def get_client(self, key):
+        return self.clients[key]

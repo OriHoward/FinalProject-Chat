@@ -5,12 +5,9 @@ if __name__ == '__main__':
     shlomi = User("shlomi")
     ori.connect()
     shlomi.connect()
-    ori.get_users()
-    ori.disconnect()
     shlomi.get_users()
-    shlomi.disconnect()
+    ori.send_private_msg("hello","shlomi")
 
-    # c2 = Client("aaa","345")
-    # c2.connect()
-    # c2.send_msg_to_server("hey!")
-    # c2.disconnect()
+
+    ori.disconnect()
+    shlomi.disconnect()
