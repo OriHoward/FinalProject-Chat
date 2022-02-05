@@ -12,8 +12,9 @@ class socketHandler:
 
     @staticmethod
     def send_msg(msg, conn):
-        msg_length = len(msg)
-        msg_len_bytes = msg_length.to_bytes(4, 'little')
-        conn.send(msg_len_bytes)
-        msg = msg.encode(FORMAT)
-        conn.send(msg)
+        if msg is not None:
+            msg_length = len(msg)
+            msg_len_bytes = msg_length.to_bytes(4, 'little')
+            conn.send(msg_len_bytes)
+            msg = msg.encode(FORMAT)
+            conn.send(msg)

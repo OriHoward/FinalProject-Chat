@@ -46,7 +46,7 @@ class Server:
                 self.handle_private_msg(curr_client)
             case Actions.DISCONNECT.value:
                 curr_client.disconnect()
-            case _:
+            case Actions.MESSAGE_ALL.value:
                 msg_to_distribute = socketHandler.get_msg(curr_client.client_socket)
                 self.send_msg_all(msg_to_distribute, curr_client)
 

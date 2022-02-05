@@ -25,8 +25,8 @@ class User:
 
     def get_users(self):
         self.server.send(Actions.USER_LIST.value)
-        clients_list: str = socketHandler.get_msg(self.server)
-        print(clients_list)
+        # clients_list: str = socketHandler.get_msg(self.server)
+        # print(clients_list)
 
     def send_all(self, msg):
         self.server.send(Actions.MESSAGE_ALL.value)
@@ -38,17 +38,17 @@ class User:
         socketHandler.send_msg(msg, self.server)
 
     def action_received(self, msg: str):
-        if msg[0] == PREFIX:
-            match msg[1:]:
-                case "get_users":
-                    self.get_users()
-                case "disconnect":
-                    self.disconnect()
-                case "get_file_list":
-                    pass
-        else:
-            self.send_msg_to_all()
+        # if msg[0] == PREFIX:
+        match msg[1:]:
+            case "get_users":
+                self.get_users()
+            case "disconnect":
+                self.disconnect()
+            case "get_file_list":
+                pass
+        # else:
+        #     self.send_msg_to_all()
 
     def send_msg_to_all(self):
-        ## passing as a string
-        pass
+        self.server.send(Actions.MESSAGE_ALL.value)
+
