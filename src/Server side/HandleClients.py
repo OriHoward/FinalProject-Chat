@@ -20,9 +20,8 @@ class HandleClients:
     def get_clients(self):
         return self.clients.keys()
 
-    def send_all(self, msg, sender_client: Client):
+    def send_all(self, msg):
         for client in self.clients.values():
-            # if client.user_name != sender_client.user_name:
             socketHandler.send_msg(msg, client.client_socket)
 
     def send_to(self, msg, from_client: Client, to_client: Client):

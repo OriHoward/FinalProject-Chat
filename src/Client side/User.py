@@ -30,7 +30,7 @@ class User:
 
     def send_all(self, msg):
         self.server.send(Actions.MESSAGE_ALL.value)
-        socketHandler.send_msg(msg, self.server)
+        return socketHandler.send_msg(msg, self.server)
 
     def send_private_msg(self, msg, user_name: str):
         self.server.send(Actions.PRIVATE_MSG.value)
@@ -38,7 +38,6 @@ class User:
         socketHandler.send_msg(msg, self.server)
 
     def action_received(self, msg: str):
-        # if msg[0] == PREFIX:
         match msg[1:]:
             case "get_users":
                 self.get_users()
@@ -46,8 +45,6 @@ class User:
                 self.disconnect()
             case "get_file_list":
                 pass
-        # else:
-        #     self.send_msg_to_all()
 
     def send_msg_to_all(self):
         self.server.send(Actions.MESSAGE_ALL.value)

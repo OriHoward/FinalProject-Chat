@@ -1,5 +1,5 @@
 from User import User
-from chatGUI import chatGUI
+from ChatGUI import ChatGUI
 if __name__ == '__main__':
     # ori = User("ori")
     # shlomi = User("shlomi")
@@ -9,6 +9,6 @@ if __name__ == '__main__':
     # ori.send_private_msg("hello","shlomi")
     # ori.disconnect()
     # shlomi.disconnect()
-    ori = chatGUI()
+    ori = ChatGUI()
 
 

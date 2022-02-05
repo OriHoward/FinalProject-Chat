@@ -48,7 +48,7 @@ class Server:
                 curr_client.disconnect()
             case Actions.MESSAGE_ALL.value:
                 msg_to_distribute = socketHandler.get_msg(curr_client.client_socket)
-                self.send_msg_all(msg_to_distribute, curr_client)
+                self.send_msg_all(msg_to_distribute)
 
     def send_user_list(self, conn):
         client_list = ""
@@ -63,5 +63,5 @@ class Server:
         msg = socketHandler.get_msg(client.client_socket)
         socketHandler.send_msg(msg, dst_client_socket)
 
-    def send_msg_all(self, msg, client: Client):
-        self.handler.send_all(msg, client)
+    def send_msg_all(self, msg):
+        self.handler.send_all(msg)
