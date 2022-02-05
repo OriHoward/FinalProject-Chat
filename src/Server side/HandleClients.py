@@ -21,9 +21,9 @@ class HandleClients:
         return self.clients.keys()
 
     def send_all(self, msg, sender_client: Client):
-        for user_name, client in self.clients:
-            if user_name != sender_client.user_name:
-                socketHandler.send_msg(msg, client.client_socket)
+        for client in self.clients.values():
+            # if client.user_name != sender_client.user_name:
+            socketHandler.send_msg(msg, client.client_socket)
 
     def send_to(self, msg, from_client: Client, to_client: Client):
         pass
