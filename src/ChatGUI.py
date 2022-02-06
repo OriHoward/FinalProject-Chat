@@ -1,5 +1,6 @@
 import threading
 from tkinter import *
+from tkinter import messagebox
 
 from HandleClients import HandleClients
 from User import User
@@ -44,8 +45,10 @@ class ChatGUI:
         self.new_user.connect()
         self.login.destroy()
         self.layout(name)
-        rcv = threading.Thread(target=self.receive)
-        rcv.start()
+        receive_thread = threading.Thread(target=self.receive)
+        check_status_thread = threading.Thread(target=self.check_status())
+        receive_thread.start()
+        check_status_thread.start()
 
     # exmaple to use later: for clicked.get() and .pack()
     # new_button = Button(self.window, text="do something", command=self.do_something_accordingly())
@@ -55,7 +58,7 @@ class ChatGUI:
         self.window.deiconify()
         self.window.title("Welcome to the chat room")
         self.window.resizable(width=False, height=False)
-        self.window.configure(width=470, height=550, bg="#17202A")
+        self.window.configure(width=800, height=550, bg="#17202A")
 
         name_label = Label(self.window, bg="#17202A", fg="#EAECEE", text=self.name, font="Helvetica 13 bold", pady=5)
         name_label.place(relwidth=1)
@@ -75,26 +78,27 @@ class ChatGUI:
 
         entry_msg.focus()
 
-        # send_btn_msg = Button(bottom_label, text="Send", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
-        #                       command=lambda: self.send_button(entry_msg.get(), entry_msg))
-        # send_btn_msg.place(relx=0.77, rely=0.008, relheight=0.03, relwidth=0.22)
+        disconnect_btn = Button(self.window, text="Disconnect", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
+                                command=lambda: self.handle_disconnect())
+
+        disconnect_btn.place(relx=0.78, rely=0.85, relheight=0.04, relwidth=0.15)
 
         # sending the message with ENTER key:
         self.window.bind('<Return>', lambda event: self.send_msg(event, entry_msg.get(), entry_msg))
 
         clicked = StringVar()
         clicked.set("Send to")
-        drop = OptionMenu(self.window, clicked, self.clients)
-        drop.configure(bg="#ABB2B9", fg="#EAECEE", font="Helvetica 10 bold", width=20)
+        drop = OptionMenu(self.window, clicked, "hello")
+        drop.configure(bg="#ABB2B9", fg="#EAECEE", font="Helvetica 10 bold", width=10)
         drop.pack()
 
-        drop.place(relx=0.77, rely=0.9, relheight=0.05, relwidth=0.22)
+        drop.place(relx=0.78, rely=0.95, relheight=0.05, relwidth=0.15)
         # todo add to send button option with clicked.get() to know which one was chosen
 
         self.text_cons.config(cursor="arrow")
 
         scrollbar = Scrollbar()
-        scrollbar.place(relheight=1, relx=0.974)
+        scrollbar.place(relheight=1, relx=0.98)
         scrollbar.config(command=self.text_cons.yview)
         self.text_cons.config(state=DISABLED)
 
@@ -102,15 +106,8 @@ class ChatGUI:
         self.text_cons.config(state=DISABLED)
         self.msg = msg
         entry_msg.delete(0, END)
-        snd = threading.Thread(target=self.send_message)
-        snd.start()
-
-    # def send_button(self, msg, entry_msg):
-    #     self.text_cons.config(state=DISABLED)
-    #     self.msg = msg
-    #     entry_msg.delete(0, END)
-    #     snd = threading.Thread(target=self.send_message)
-    #     snd.start()
+        send_thread = threading.Thread(target=self.send_message)
+        send_thread.start()
 
     def receive(self):
         while True:
@@ -123,7 +120,8 @@ class ChatGUI:
             except:
                 print("An error occured!")
                 self.new_user.disconnect()
-                break
+                self.window.destroy()
+                quit()
 
     def send_message(self):
         self.text_cons.config(state=DISABLED)
@@ -131,16 +129,23 @@ class ChatGUI:
             if self.msg[0] == PREFIX:
                 self.new_user.action_received(self.msg)
                 break
-            # if self.msg[0] == PREFIX:
-            #     match self.msg[1:]:
-            #         case "get_users":
-            #             self.new_user.get_users()
-            #         case "disconnect":
-            #             self.new_user.disconnect()
-            #         case "get_file_list":
-            #             pass
             else:
                 self.new_user.send_msg_to_all()
-                message = (f"{self.name}: {self.msg}")
+                message = f"{self.name}: {self.msg}"
                 socketHandler.send_msg(message, self.new_user.server)
                 break
+
+    def check_status(self):
+        self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.window.mainloop()
+
+    def on_closing(self):
+        if messagebox.askokcancel("Quit", "Are you sure you want to disconnect?"):
+            self.new_user.disconnect()
+            self.window.destroy()
+            quit()
+
+    def handle_disconnect(self):
+        self.new_user.disconnect()
+        self.window.destroy()
+        quit()
