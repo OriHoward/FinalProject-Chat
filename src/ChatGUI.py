@@ -2,12 +2,10 @@ import threading
 from tkinter import *
 from tkinter import messagebox
 
-from HandleClients import HandleClients
 from User import User
 from socketHandler import socketHandler
 
 PREFIX = '/'
-handler = HandleClients()
 
 
 class ChatGUI:
@@ -20,7 +18,6 @@ class ChatGUI:
         self.login.configure(width=450, height=200)
         self.login_label = Label(self.login, text="Please login to continue", justify=CENTER, font="Helvetica 14 bold")
         self.login_label.place(relheight=0.1, relx=0.2, rely=0.07)
-        self.clients = handler.clients.keys()
         self.label_name = Label(self.login, text="Enter your name: ", font="Helvetica 12")
         self.label_name.place(relheight=0.1, relx=0.03, rely=0.2)
 
@@ -80,8 +77,11 @@ class ChatGUI:
 
         disconnect_btn = Button(self.window, text="Disconnect", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
                                 command=lambda: self.handle_disconnect())
-
         disconnect_btn.place(relx=0.78, rely=0.85, relheight=0.04, relwidth=0.15)
+
+        download_button = Button(self.window,text="Download file", font="Helvetica 10 bold", width=20, bg="#ABB2B9"
+                                 ,command=lambda : self.handle_file_download())
+        download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
         # sending the message with ENTER key:
         self.window.bind('<Return>', lambda event: self.send_msg(event, entry_msg.get(), entry_msg))
@@ -92,7 +92,7 @@ class ChatGUI:
         drop.configure(bg="#ABB2B9", fg="#EAECEE", font="Helvetica 10 bold", width=10)
         drop.pack()
 
-        drop.place(relx=0.78, rely=0.95, relheight=0.05, relwidth=0.15)
+        drop.place(relx=0.78, rely=0.94, relheight=0.05, relwidth=0.15)
         # todo add to send button option with clicked.get() to know which one was chosen
 
         self.text_cons.config(cursor="arrow")
@@ -141,11 +141,12 @@ class ChatGUI:
 
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Are you sure you want to disconnect?"):
-            self.new_user.disconnect()
-            self.window.destroy()
-            quit()
+            self.handle_disconnect()
 
     def handle_disconnect(self):
         self.new_user.disconnect()
         self.window.destroy()
         quit()
+
+    def handle_file_download(self):
+        pass

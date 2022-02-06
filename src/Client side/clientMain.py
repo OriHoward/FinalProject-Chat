@@ -1,6 +1,5 @@
 from User import User
 from ChatGUI import ChatGUI
-
 if __name__ == '__main__':
     # ori = User("ori")
     # shlomi = User("shlomi")
@@ -11,3 +10,5 @@ if __name__ == '__main__':
     # ori.disconnect()
     # shlomi.disconnect()
     ori = ChatGUI()
+
+
