@@ -23,7 +23,6 @@ class ChatGUI:
 
         self.entry_name = Entry(self.login, font="Helvetica 14")
         self.entry_name.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.2)
-
         self.entry_name.focus()
 
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
@@ -43,9 +42,9 @@ class ChatGUI:
         self.login.destroy()
         self.layout(name)
         receive_thread = threading.Thread(target=self.receive)
-        check_status_thread = threading.Thread(target=self.check_status())
+        # check_status_thread = threading.Thread(target=self.check_status())
         receive_thread.start()
-        check_status_thread.start()
+        # check_status_thread.start()
 
     # exmaple to use later: for clicked.get() and .pack()
     # new_button = Button(self.window, text="do something", command=self.do_something_accordingly())
@@ -72,7 +71,6 @@ class ChatGUI:
 
         entry_msg = Entry(bottom_label, bg="#2C3E50", fg="#EAECEE", font="Helvetica 13")
         entry_msg.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
-
         entry_msg.focus()
 
         disconnect_btn = Button(self.window, text="Disconnect", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
@@ -119,21 +117,20 @@ class ChatGUI:
                 self.text_cons.see(END)
             except:
                 print("An error occured!")
-                self.new_user.disconnect()
-                self.window.destroy()
-                quit()
+                self.handle_disconnect()
 
     def send_message(self):
         self.text_cons.config(state=DISABLED)
         while True:
-            if self.msg[0] == PREFIX:
-                self.new_user.action_received(self.msg)
-                break
-            else:
-                self.new_user.send_msg_to_all()
-                message = f"{self.name}: {self.msg}"
-                socketHandler.send_msg(message, self.new_user.server)
-                break
+            if len(self.msg) > 0:
+                if self.msg[0] == PREFIX:
+                    self.new_user.action_received(self.msg)
+                    break
+                else:
+                    self.new_user.send_msg_to_all()
+                    message = f"{self.name}: {self.msg}"
+                    socketHandler.send_msg(message, self.new_user.server)
+                    break
 
     def check_status(self):
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)

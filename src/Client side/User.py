@@ -28,9 +28,9 @@ class User:
         # clients_list: str = socketHandler.get_msg(self.server)
         # print(clients_list)
 
-    def send_all(self, msg):
-        self.server.send(Actions.MESSAGE_ALL.value)
-        return socketHandler.send_msg(msg, self.server)
+    # def send_all(self, msg):
+    #     self.server.send(Actions.MESSAGE_ALL.value)
+    #     # return socketHandler.send_msg(msg, self.server)
 
     def send_private_msg(self, msg, user_name: str):
         self.server.send(Actions.PRIVATE_MSG.value)
@@ -39,13 +39,12 @@ class User:
 
     def action_received(self, msg: str):
         match msg[1:]:
-            case "get_users":
+            case "get users":
                 self.get_users()
             case "disconnect":
                 self.disconnect()
-            case "get_file_list":
+            case "get file list":
                 pass
 
     def send_msg_to_all(self):
         self.server.send(Actions.MESSAGE_ALL.value)
-

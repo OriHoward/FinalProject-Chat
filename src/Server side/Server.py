@@ -32,6 +32,8 @@ class Server:
         while True:
             conn, addr = self.server.accept()
             curr_name = socketHandler.get_msg(conn)
+            self.handler.send_all(f"{curr_name} has joined the chat!")
+            socketHandler.send_msg("connection successful!",conn)
             new_client = Client(conn, curr_name)
             self.handler.add_client(new_client)
             thread = threading.Thread(target=self.handle_client, args=(conn, addr, new_client))
