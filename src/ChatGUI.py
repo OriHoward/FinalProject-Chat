@@ -1,11 +1,14 @@
+import sys
 import threading
 from tkinter import *
 from tkinter import messagebox
 
+import threads
+from HandleClients import HandleClients
 from User import User
-from socketHandler import socketHandler
 
-PREFIX = '/'
+handler = HandleClients()
+users = handler.get_clients_list()
 
 
 class ChatGUI:
@@ -20,11 +23,11 @@ class ChatGUI:
         self.login_label.place(relheight=0.1, relx=0.2, rely=0.07)
         self.label_name = Label(self.login, text="Enter your name: ", font="Helvetica 12")
         self.label_name.place(relheight=0.1, relx=0.03, rely=0.2)
-
+        self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.entry_name = Entry(self.login, font="Helvetica 14")
         self.entry_name.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.2)
         self.entry_name.focus()
-
+        self.thread = threads.handle_Threads(self)
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
                           command=lambda: self.enter_main_window(self.entry_name.get()))
         self.btn.place(relx=0.4, rely=0.4)
@@ -37,14 +40,13 @@ class ChatGUI:
         self.window.mainloop()
 
     def enter_main_window(self, name):
+        if len(name) < 1:
+            return
         self.new_user = User(name)
         self.new_user.connect()
         self.login.destroy()
         self.layout(name)
-        receive_thread = threading.Thread(target=self.receive)
-        # check_status_thread = threading.Thread(target=self.check_status())
-        receive_thread.start()
-        # check_status_thread.start()
+        self.thread.start_receiver()
 
     # exmaple to use later: for clicked.get() and .pack()
     # new_button = Button(self.window, text="do something", command=self.do_something_accordingly())
@@ -53,9 +55,8 @@ class ChatGUI:
         self.name = name
         self.window.deiconify()
         self.window.title("Welcome to the chat room")
-        self.window.resizable(width=False, height=False)
+        self.window.resizable(width=True, height=True)
         self.window.configure(width=800, height=550, bg="#17202A")
-
         name_label = Label(self.window, bg="#17202A", fg="#EAECEE", text=self.name, font="Helvetica 13 bold", pady=5)
         name_label.place(relwidth=1)
 
@@ -77,8 +78,8 @@ class ChatGUI:
                                 command=lambda: self.handle_disconnect())
         disconnect_btn.place(relx=0.78, rely=0.85, relheight=0.04, relwidth=0.15)
 
-        download_button = Button(self.window,text="Download file", font="Helvetica 10 bold", width=20, bg="#ABB2B9"
-                                 ,command=lambda : self.handle_file_download())
+        download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20, bg="#ABB2B9"
+                                 , command=lambda: self.handle_file_download())
         download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
         # sending the message with ENTER key:
@@ -102,39 +103,8 @@ class ChatGUI:
 
     def send_msg(self, event, msg, entry_msg):
         self.text_cons.config(state=DISABLED)
-        self.msg = msg
         entry_msg.delete(0, END)
-        send_thread = threading.Thread(target=self.send_message)
-        send_thread.start()
-
-    def receive(self):
-        while True:
-            try:
-                message = socketHandler.get_msg(self.new_user.server)
-                self.text_cons.config(state=NORMAL)
-                self.text_cons.insert(END, message + "\n")
-                self.text_cons.config(state=DISABLED)
-                self.text_cons.see(END)
-            except:
-                print("An error occured!")
-                self.handle_disconnect()
-
-    def send_message(self):
-        self.text_cons.config(state=DISABLED)
-        while True:
-            if len(self.msg) > 0:
-                if self.msg[0] == PREFIX:
-                    self.new_user.action_received(self.msg)
-                    break
-                else:
-                    self.new_user.send_msg_to_all()
-                    message = f"{self.name}: {self.msg}"
-                    socketHandler.send_msg(message, self.new_user.server)
-                    break
-
-    def check_status(self):
-        self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.window.mainloop()
+        self.thread.start_sender(msg)
 
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Are you sure you want to disconnect?"):
@@ -143,7 +113,14 @@ class ChatGUI:
     def handle_disconnect(self):
         self.new_user.disconnect()
         self.window.destroy()
+        self.new_user.is_connected = False
         quit()
 
     def handle_file_download(self):
         pass
+
+    def update_chat_display(self, message):
+        self.text_cons.config(state=NORMAL)
+        self.text_cons.insert(END, message + "\n")
+        self.text_cons.config(state=DISABLED)
+        self.text_cons.see(END)

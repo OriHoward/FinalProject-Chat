@@ -9,8 +9,8 @@ class Client:
         return f"user_name:{self.user_name}"
 
     def disconnect(self):
-        print(f"{self.user_name} has disconnected")
         self.is_connected = False
+        self.client_socket.close()
 
     def get_new_msg(self):
         if self.new_msgs:

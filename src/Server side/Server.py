@@ -33,7 +33,7 @@ class Server:
             conn, addr = self.server.accept()
             curr_name = socketHandler.get_msg(conn)
             self.handler.send_all(f"{curr_name} has joined the chat!")
-            socketHandler.send_msg("connection successful!",conn)
+            socketHandler.send_msg("connection successful!", conn)
             new_client = Client(conn, curr_name)
             self.handler.add_client(new_client)
             thread = threading.Thread(target=self.handle_client, args=(conn, addr, new_client))
@@ -47,7 +47,7 @@ class Server:
             case Actions.PRIVATE_MSG.value:
                 self.handle_private_msg(curr_client)
             case Actions.DISCONNECT.value:
-                curr_client.disconnect()
+                self.disconnect(curr_client)
             case Actions.MESSAGE_ALL.value:
                 msg_to_distribute = socketHandler.get_msg(curr_client.client_socket)
                 self.send_msg_all(msg_to_distribute)
@@ -67,3 +67,10 @@ class Server:
 
     def send_msg_all(self, msg):
         self.handler.send_all(msg)
+
+    def disconnect(self,curr_client):
+        curr_client.disconnect()
+        self.handler.remove_client(curr_client)
+        self.handler.send_all(f"{curr_client.user_name} has disconnected")
+
+    # todo thread to disconnect and close all ports from console

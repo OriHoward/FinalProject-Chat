@@ -15,22 +15,22 @@ class User:
         self.ip = socket.gethostbyname(socket.gethostname())
         self.address = (self.ip, PORT)
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.is_connected = False
 
     def connect(self):
-        self.server.connect(self.address)
-        socketHandler.send_msg(self.user_name, self.server)
+        try:
+            self.server.connect(self.address)
+            self.is_connected = True
+            socketHandler.send_msg(self.user_name, self.server)
+        except:
+            exit()
 
     def disconnect(self):
         self.server.send(Actions.DISCONNECT.value)
+        # self.server.close()
 
     def get_users(self):
         self.server.send(Actions.USER_LIST.value)
-        # clients_list: str = socketHandler.get_msg(self.server)
-        # print(clients_list)
-
-    # def send_all(self, msg):
-    #     self.server.send(Actions.MESSAGE_ALL.value)
-    #     # return socketHandler.send_msg(msg, self.server)
 
     def send_private_msg(self, msg, user_name: str):
         self.server.send(Actions.PRIVATE_MSG.value)

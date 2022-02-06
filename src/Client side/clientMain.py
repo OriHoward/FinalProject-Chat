@@ -1,6 +1,8 @@
+import threading
 
 from ChatGUI import ChatGUI
+
 if __name__ == '__main__':
-    c1 = ChatGUI()
-
-
+    for i in range(3):
+        thread = threading.Thread(target=ChatGUI)
+        thread.start()

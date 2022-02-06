@@ -20,6 +20,15 @@ class HandleClients:
     def get_clients(self):
         return self.clients.keys()
 
+    def remove_client(self, client: Client):
+        self.clients.pop(client.user_name, None)
+
+    def get_clients_list(self):
+        users: list = []
+        for client in self.clients.keys():
+            users.append(client)
+        return users
+
     def send_all(self, msg):
         for client in self.clients.values():
             socketHandler.send_msg(msg, client.client_socket)
