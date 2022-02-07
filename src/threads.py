@@ -7,8 +7,9 @@ PREFIX = '/'
 
 
 class HandleThreads:
-    def __init__(self, display_chat):
+    def __init__(self, display_chat, button_action):
         self.display_chat = display_chat
+        self.button_action = button_action
 
     def start_receiver(self):
         thread = threading.Thread(target=self.receive)
@@ -24,8 +25,10 @@ class HandleThreads:
                 message = SocketHandler.get_msg(self.display_chat.new_user.server)
                 self.display_chat.update_chat_display(message)
             except:
-                print("An error occured!")
-                self.display_chat.handle_disconnect()
+                print("An error occurred in receive thread")
+                self.button_action.handle_disconnect()
+                print("hello")
+        print("hello")
 
     def sender(self, msg):
         self.display_chat.text_cons.config(state=DISABLED)

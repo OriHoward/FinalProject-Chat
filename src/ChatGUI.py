@@ -1,5 +1,4 @@
-import sys
-import threading
+
 from tkinter import *
 from tkinter import messagebox
 
@@ -28,8 +27,8 @@ class ChatGUI:
         self.entry_name = Entry(self.login, font="Helvetica 14")
         self.entry_name.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.2)
         self.entry_name.focus()
-        self.thread = threads.HandleThreads(self)
         self.button_action = ButtonActions.ButtonsActions(self)
+        self.thread = threads.HandleThreads(self, self.button_action)
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
                           command=lambda: self.enter_main_window(self.entry_name.get()))
         self.btn.place(relx=0.4, rely=0.4)

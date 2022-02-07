@@ -41,14 +41,15 @@ class User:
     def action_received(self, msg: str):
         msg = msg.split(" ")
         match msg[0][1:]:
-            case "users":
+            case "users" | "getusers":
                 self.get_users()
             case "disconnect":
                 self.disconnect()
-            case "files":
+            case "files" | "getfiles":
                 pass
-            case "whisper":
-                self.send_private_msg(msg[2:], msg[1])
+            case "whisper" | "w":
+                if len(msg) > 2:
+                    self.send_private_msg(msg[2:], msg[1])
 
     def send_msg_to_all(self):
         self.server.send(Actions.MESSAGE_ALL.value)

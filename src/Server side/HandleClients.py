@@ -50,8 +50,11 @@ class HandleClients:
         else:
             dst_client_socket = self.get_client(dst_client_user_name).client_socket
             msg = SocketHandler.get_msg(client.client_socket)
-            msg = f"from {client.user_name}: {msg}"
-            SocketHandler.send_msg(msg, dst_client_socket)
+            msg_to = f"to {dst_client_user_name}: {msg}"
+            SocketHandler.send_msg(msg_to, client.client_socket)
+            msg_from = f"from {client.user_name}: {msg}"
+            SocketHandler.send_msg(msg_from, dst_client_socket)
+
 
     def disconnect(self, curr_client):
         curr_client.disconnect()

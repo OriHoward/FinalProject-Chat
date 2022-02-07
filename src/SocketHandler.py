@@ -1,3 +1,5 @@
+
+
 FORMAT = 'utf-8'
 
 
@@ -12,7 +14,7 @@ class SocketHandler:
                 return conn.recv(msg_len).decode(FORMAT)
         except:
             conn.close()
-            print("An error occurred")
+            print("An error occurred in get_msg ")
 
     @staticmethod
     def send_msg(msg, conn):
@@ -25,4 +27,4 @@ class SocketHandler:
                 conn.send(msg)
         except:
             conn.close()
-            print("An error occurred")
+            print("An error occurred in send_msg")
