@@ -1,7 +1,7 @@
 import socket
 
 from Client import Client
-from socketHandler import socketHandler
+from SocketHandler import SocketHandler
 
 FORMAT = 'utf-8'
 HEADER = 64
@@ -31,7 +31,7 @@ class HandleClients:
 
     def send_all(self, msg):
         for client in self.clients.values():
-            socketHandler.send_msg(msg, client.client_socket)
+            SocketHandler.send_msg(msg, client.client_socket)
 
     def send_to(self, msg, from_client: Client, to_client: Client):
         pass

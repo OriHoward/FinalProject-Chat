@@ -3,6 +3,7 @@ import threading
 from tkinter import *
 from tkinter import messagebox
 
+import ButtonActions
 import threads
 from HandleClients import HandleClients
 from User import User
@@ -27,7 +28,8 @@ class ChatGUI:
         self.entry_name = Entry(self.login, font="Helvetica 14")
         self.entry_name.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.2)
         self.entry_name.focus()
-        self.thread = threads.handle_Threads(self)
+        self.thread = threads.HandleThreads(self)
+        self.button_action = ButtonActions.ButtonsActions(self)
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
                           command=lambda: self.enter_main_window(self.entry_name.get()))
         self.btn.place(relx=0.4, rely=0.4)
@@ -57,34 +59,49 @@ class ChatGUI:
         self.window.title("Welcome to the chat room")
         self.window.resizable(width=True, height=True)
         self.window.configure(width=800, height=550, bg="#17202A")
-        name_label = Label(self.window, bg="#17202A", fg="#EAECEE", text=self.name, font="Helvetica 13 bold", pady=5)
-        name_label.place(relwidth=1)
+        self.add_chat_window()
+        self.add_buttons()
+        self.add_drop_down_menu()
+        self.text_cons.config(cursor="arrow")
+        self.add_scrollbar()
 
-        line = Label(self.window, width=450, bg="#ABB2B9")
-        line.place(relwidth=1, rely=0.07, relheight=0.012)
+    def update_chat_display(self, message):
+        self.text_cons.config(state=NORMAL)
+        self.text_cons.insert(END, message + "\n")
+        self.text_cons.config(state=DISABLED)
+        self.text_cons.see(END)
 
-        self.text_cons = Text(self.window, width=20, height=2, bg="#17202A", fg="#EAECEE", font="Helvetica 14", padx=5,
-                              pady=5)
-        self.text_cons.place(relheight=0.745, relwidth=1, rely=0.08)
-
-        bottom_label = Label(self.window, bg="#ABB2B9", height=80)
-        bottom_label.place(relwidth=1, rely=0.825)
-
-        entry_msg = Entry(bottom_label, bg="#2C3E50", fg="#EAECEE", font="Helvetica 13")
-        entry_msg.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
-        entry_msg.focus()
-
+    def add_buttons(self):
         disconnect_btn = Button(self.window, text="Disconnect", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
-                                command=lambda: self.handle_disconnect())
+                                command=lambda: self.button_action.handle_disconnect())
         disconnect_btn.place(relx=0.78, rely=0.85, relheight=0.04, relwidth=0.15)
 
         download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20, bg="#ABB2B9"
-                                 , command=lambda: self.handle_file_download())
+                                 , command=lambda: self.button_action.handle_file_download())
         download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
+    def add_chat_window(self):
+        name_label = Label(self.window, bg="#17202A", fg="#EAECEE", text=self.name, font="Helvetica 13 bold", pady=5)
+        name_label.place(relwidth=1)
+        line = Label(self.window, width=450, bg="#ABB2B9")
+        line.place(relwidth=1, rely=0.07, relheight=0.012)
+        bottom_label = Label(self.window, bg="#ABB2B9", height=80)
+        bottom_label.place(relwidth=1, rely=0.825)
+        self.text_cons = Text(self.window, width=20, height=2, bg="#17202A", fg="#EAECEE", font="Helvetica 14", padx=5,
+                              pady=5)
+        self.text_cons.place(relheight=0.745, relwidth=1, rely=0.08)
+        entry_msg = Entry(bottom_label, bg="#2C3E50", fg="#EAECEE", font="Helvetica 13")
+        entry_msg.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
+        entry_msg.focus()
         # sending the message with ENTER key:
         self.window.bind('<Return>', lambda event: self.send_msg(event, entry_msg.get(), entry_msg))
 
+    def send_msg(self, event, msg, entry_msg):
+        self.text_cons.config(state=DISABLED)
+        entry_msg.delete(0, END)
+        self.thread.start_sender(msg)
+
+    def add_drop_down_menu(self):
         clicked = StringVar()
         clicked.set("Send to")
         drop = OptionMenu(self.window, clicked, "hello")
@@ -94,33 +111,12 @@ class ChatGUI:
         drop.place(relx=0.78, rely=0.94, relheight=0.05, relwidth=0.15)
         # todo add to send button option with clicked.get() to know which one was chosen
 
-        self.text_cons.config(cursor="arrow")
-
+    def add_scrollbar(self):
         scrollbar = Scrollbar()
         scrollbar.place(relheight=1, relx=0.98)
         scrollbar.config(command=self.text_cons.yview)
         self.text_cons.config(state=DISABLED)
 
-    def send_msg(self, event, msg, entry_msg):
-        self.text_cons.config(state=DISABLED)
-        entry_msg.delete(0, END)
-        self.thread.start_sender(msg)
-
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Are you sure you want to disconnect?"):
-            self.handle_disconnect()
-
-    def handle_disconnect(self):
-        self.new_user.disconnect()
-        self.window.destroy()
-        self.new_user.is_connected = False
-        quit()
-
-    def handle_file_download(self):
-        pass
-
-    def update_chat_display(self, message):
-        self.text_cons.config(state=NORMAL)
-        self.text_cons.insert(END, message + "\n")
-        self.text_cons.config(state=DISABLED)
-        self.text_cons.see(END)
+            self.button_action.handle_disconnect()

@@ -1,7 +1,7 @@
 FORMAT = 'utf-8'
 
 
-class socketHandler:
+class SocketHandler:
 
     @staticmethod
     def get_msg(conn):
@@ -12,6 +12,7 @@ class socketHandler:
                 return conn.recv(msg_len).decode(FORMAT)
         except:
             conn.close()
+            print("An error occurred")
 
     @staticmethod
     def send_msg(msg, conn):

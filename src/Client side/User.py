@@ -1,7 +1,7 @@
 import socket
 
 from Actions import Actions
-from socketHandler import socketHandler
+from SocketHandler import SocketHandler
 
 FORMAT = 'utf-8'
 HEADER = 64
@@ -21,7 +21,7 @@ class User:
         try:
             self.server.connect(self.address)
             self.is_connected = True
-            socketHandler.send_msg(self.user_name, self.server)
+            SocketHandler.send_msg(self.user_name, self.server)
         except:
             exit()
 
@@ -34,8 +34,8 @@ class User:
 
     def send_private_msg(self, msg, user_name: str):
         self.server.send(Actions.PRIVATE_MSG.value)
-        socketHandler.send_msg(user_name, self.server)
-        socketHandler.send_msg(msg, self.server)
+        SocketHandler.send_msg(user_name, self.server)
+        SocketHandler.send_msg(msg, self.server)
 
     def action_received(self, msg: str):
         match msg[1:]:
