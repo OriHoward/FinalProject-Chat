@@ -32,19 +32,23 @@ class User:
     def get_users(self):
         self.server.send(Actions.USER_LIST.value)
 
-    def send_private_msg(self, msg, user_name: str):
+    def send_private_msg(self, msg, user_name):
+        msg = " ".join(msg)
         self.server.send(Actions.PRIVATE_MSG.value)
         SocketHandler.send_msg(user_name, self.server)
         SocketHandler.send_msg(msg, self.server)
 
     def action_received(self, msg: str):
-        match msg[1:]:
-            case "get users":
+        msg = msg.split(" ")
+        match msg[0][1:]:
+            case "users":
                 self.get_users()
             case "disconnect":
                 self.disconnect()
-            case "get file list":
+            case "files":
                 pass
+            case "whisper":
+                self.send_private_msg(msg[2:], msg[1])
 
     def send_msg_to_all(self):
         self.server.send(Actions.MESSAGE_ALL.value)

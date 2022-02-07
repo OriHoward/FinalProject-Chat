@@ -33,8 +33,23 @@ class HandleClients:
         for client in self.clients.values():
             SocketHandler.send_msg(msg, client.client_socket)
 
-    def send_to(self, msg, from_client: Client, to_client: Client):
-        pass
-
     def get_client(self, key):
         return self.clients[key]
+
+    def send_user_list(self, conn):
+        client_list = ""
+        for client in self.get_clients():
+            client_list += f"{client},"
+        client_list = client_list[:len(client_list) - 1]
+        SocketHandler.send_msg(client_list, conn)
+
+    def handle_private_msg(self, client: Client):
+        dst_client_user_name = SocketHandler.get_msg(client.client_socket)
+        dst_client_socket = self.get_client(dst_client_user_name).client_socket
+        msg = SocketHandler.get_msg(client.client_socket)
+        SocketHandler.send_msg(msg, dst_client_socket)
+
+    def disconnect(self, curr_client):
+        curr_client.disconnect()
+        self.remove_client(curr_client)
+        self.send_all(f"{curr_client.user_name} has disconnected")
