@@ -42,7 +42,8 @@ class ChatGUI:
         self.window.mainloop()
 
     def enter_main_window(self, name):
-        if len(name) < 1:
+        if len(name) < 1 or " " in name or not name.isalpha():
+            self.error_msg()
             return
         self.new_user = User(name)
         self.new_user.connect()
@@ -120,3 +121,7 @@ class ChatGUI:
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Are you sure you want to disconnect?"):
             self.button_action.handle_disconnect()
+
+    def error_msg(self):
+        error = Label(self.login, text="please enter a valid one word name", font="Helvetica 12")
+        error.place(relheight=0.1, relx=0.18, rely=0.7)

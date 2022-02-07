@@ -29,12 +29,12 @@ class HandleClients:
             users.append(client)
         return users
 
+    def get_client(self, key):
+        return self.clients[key]
+
     def send_all(self, msg):
         for client in self.clients.values():
             SocketHandler.send_msg(msg, client.client_socket)
-
-    def get_client(self, key):
-        return self.clients[key]
 
     def send_user_list(self, conn):
         client_list = ""
@@ -45,9 +45,13 @@ class HandleClients:
 
     def handle_private_msg(self, client: Client):
         dst_client_user_name = SocketHandler.get_msg(client.client_socket)
-        dst_client_socket = self.get_client(dst_client_user_name).client_socket
-        msg = SocketHandler.get_msg(client.client_socket)
-        SocketHandler.send_msg(msg, dst_client_socket)
+        if self.clients.get(dst_client_user_name) is None:
+            SocketHandler.send_msg(f"Client {dst_client_user_name} is not connected", client.client_socket)
+        else:
+            dst_client_socket = self.get_client(dst_client_user_name).client_socket
+            msg = SocketHandler.get_msg(client.client_socket)
+            msg = f"from {client.user_name}: {msg}"
+            SocketHandler.send_msg(msg, dst_client_socket)
 
     def disconnect(self, curr_client):
         curr_client.disconnect()
