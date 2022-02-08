@@ -5,7 +5,7 @@ from SocketHandler import SocketHandler
 
 FORMAT = 'utf-8'
 HEADER = 64
-PORT = 55000
+PORT = 50000
 IP = socket.gethostbyname(socket.gethostname())
 ADDR = (IP, PORT)
 
@@ -27,10 +27,11 @@ class HandleClients:
         users: list = []
         for client in self.clients.keys():
             users.append(client)
+        print(users)
         return users
 
     def get_client(self, key):
-        return self.clients[key]
+        return self.clients.get(key)
 
     def send_all(self, msg):
         for client in self.clients.values():
@@ -55,8 +56,7 @@ class HandleClients:
             msg_from = f"from {client.user_name}: {msg}"
             SocketHandler.send_msg(msg_from, dst_client_socket)
 
-
-    def disconnect(self, curr_client):
-        curr_client.disconnect()
-        self.remove_client(curr_client)
-        self.send_all(f"{curr_client.user_name} has disconnected")
+    def disconnect(self, client):
+        self.remove_client(client)
+        client.disconnect()
+        self.send_all(f"{client.user_name} has disconnected")

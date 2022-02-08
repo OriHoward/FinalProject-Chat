@@ -1,14 +1,9 @@
-
 from tkinter import *
 from tkinter import messagebox
-
 import ButtonActions
 import threads
-from HandleClients import HandleClients
+from SocketHandler import SocketHandler
 from User import User
-
-handler = HandleClients()
-users = handler.get_clients_list()
 
 
 class ChatGUI:
@@ -32,7 +27,7 @@ class ChatGUI:
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
                           command=lambda: self.enter_main_window(self.entry_name.get()))
         self.btn.place(relx=0.4, rely=0.4)
-
+        ##todo destroy and terminate program if not logged in
         self.name = None
         self.text_cons = None
         self.new_user: User = None
@@ -41,11 +36,13 @@ class ChatGUI:
         self.window.mainloop()
 
     def enter_main_window(self, name):
-        if len(name) < 1 or " " in name or not name.isalpha():
+        if len(name) < 2 or " " in name or not name.isalpha():
             self.error_msg()
-            return
+            return False
         self.new_user = User(name)
         self.new_user.connect()
+        if not self.is_taken():
+            return
         self.login.destroy()
         self.layout(name)
         self.thread.start_receiver()
@@ -123,4 +120,15 @@ class ChatGUI:
 
     def error_msg(self):
         error = Label(self.login, text="please enter a valid one word name", font="Helvetica 12")
+        error.place(relheight=0.1, relx=0.18, rely=0.7)
+
+    def is_taken(self):
+        if not SocketHandler.get_msg(self.new_user.server):
+            self.new_user.disconnect()
+            self.taken_name_msg()
+            return False
+        return True
+
+    def taken_name_msg(self):
+        error = Label(self.login, text="Name is taken, please try a different name", font="Helvetica 12")
         error.place(relheight=0.1, relx=0.18, rely=0.7)

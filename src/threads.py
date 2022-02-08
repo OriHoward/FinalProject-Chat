@@ -12,12 +12,13 @@ class HandleThreads:
         self.button_action = button_action
 
     def start_receiver(self):
-        thread = threading.Thread(target=self.receive)
+        thread = threading.Thread(target=self.receive,daemon=True)
         thread.start()
 
     def start_sender(self, msg):
-        thread = threading.Thread(target=self.sender, args=(msg,))
+        thread = threading.Thread(target=self.sender, args=(msg,),daemon=True)
         thread.start()
+
 
     def receive(self):
         while self.display_chat.new_user.is_connected:
@@ -27,8 +28,8 @@ class HandleThreads:
             except:
                 print("An error occurred in receive thread")
                 self.button_action.handle_disconnect()
-                print("hello")
-        print("hello")
+                print("check if it prints!!")
+        print("check if it prints!!")
 
     def sender(self, msg):
         self.display_chat.text_cons.config(state=DISABLED)

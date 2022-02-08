@@ -1,12 +1,15 @@
 import socket
-
+from Ports import Ports
 from Actions import Actions
 from SocketHandler import SocketHandler
 
 FORMAT = 'utf-8'
 HEADER = 64
-PORT = 55000
+PORT = 50000
 PREFIX = '/'
+UPPER_BOUND = 55015
+LOWER_BOUND = 55000
+ports = Ports(LOWER_BOUND, UPPER_BOUND)
 
 
 class User:
@@ -15,6 +18,10 @@ class User:
         self.ip = socket.gethostbyname(socket.gethostname())
         self.address = (self.ip, PORT)
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.port = ports.check_for_ports()
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server.bind(('', self.port))
+        print(self.port)
         self.is_connected = False
 
     def connect(self):
@@ -27,7 +34,9 @@ class User:
 
     def disconnect(self):
         self.server.send(Actions.DISCONNECT.value)
-        # self.server.close()
+        self.is_connected = False
+        ports.ports[self.port - LOWER_BOUND] = False
+
 
     def get_users(self):
         self.server.send(Actions.USER_LIST.value)
@@ -46,10 +55,13 @@ class User:
             case "disconnect":
                 self.disconnect()
             case "files" | "getfiles":
-                pass
+                self.get_file_list()
             case "whisper" | "w":
                 if len(msg) > 2:
                     self.send_private_msg(msg[2:], msg[1])
 
     def send_msg_to_all(self):
         self.server.send(Actions.MESSAGE_ALL.value)
+
+    def get_file_list(self):
+        pass
