@@ -1,18 +1,20 @@
 import socket
 
 from Client import Client
+from Ports import Ports
 from SocketHandler import SocketHandler
 
-FORMAT = 'utf-8'
-HEADER = 64
-PORT = 50000
+GATEWAY_PORT = 50000
+LOWER_BOUND = 55000
+UPPER_BOUND = 55015
 IP = socket.gethostbyname(socket.gethostname())
-ADDR = (IP, PORT)
+ADDR = (IP, GATEWAY_PORT)
 
 
 class HandleClients:
     def __init__(self):
         self.clients: dict[str, Client] = {}
+        self.port = Ports()
 
     def add_client(self, client: Client):
         self.clients[client.user_name] = client
@@ -22,13 +24,6 @@ class HandleClients:
 
     def remove_client(self, client: Client):
         self.clients.pop(client.user_name, None)
-
-    def get_clients_list(self):
-        users: list = []
-        for client in self.clients.keys():
-            users.append(client)
-        print(users)
-        return users
 
     def get_client(self, key):
         return self.clients.get(key)
@@ -42,7 +37,7 @@ class HandleClients:
         for client in self.get_clients():
             client_list += f"{client},"
         client_list = client_list[:len(client_list) - 1]
-        SocketHandler.send_msg(client_list, conn)
+        SocketHandler.send_msg(f"Connected users: {client_list}", conn)
 
     def handle_private_msg(self, client: Client):
         dst_client_user_name = SocketHandler.get_msg(client.client_socket)
@@ -60,3 +55,11 @@ class HandleClients:
         self.remove_client(client)
         client.disconnect()
         self.send_all(f"{client.user_name} has disconnected")
+
+    def is_user_available(self, name):
+        if self.get_client(name) is None:
+            return True
+        return False
+
+    def get_port(self):
+        return self.port.receive_port()

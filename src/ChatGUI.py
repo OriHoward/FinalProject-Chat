@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import ButtonActions
 import threads
+from Actions import Actions
 from SocketHandler import SocketHandler
 from User import User
 
@@ -18,7 +19,8 @@ class ChatGUI:
         self.login_label.place(relheight=0.1, relx=0.2, rely=0.07)
         self.label_name = Label(self.login, text="Enter your name: ", font="Helvetica 12")
         self.label_name.place(relheight=0.1, relx=0.03, rely=0.2)
-        self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.window.protocol("WM_DELETE_WINDOW", self.close_chat)
+        self.login.protocol("WM_DELETE_WINDOW", self.close_login)
         self.entry_name = Entry(self.login, font="Helvetica 14")
         self.entry_name.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.2)
         self.entry_name.focus()
@@ -41,7 +43,9 @@ class ChatGUI:
             return False
         self.new_user = User(name)
         self.new_user.connect()
-        if not self.is_taken():
+        if not self.new_user.is_connected:
+            return
+        if not self.is_available():
             return
         self.login.destroy()
         self.layout(name)
@@ -63,10 +67,11 @@ class ChatGUI:
         self.add_scrollbar()
 
     def update_chat_display(self, message):
-        self.text_cons.config(state=NORMAL)
-        self.text_cons.insert(END, message + "\n")
-        self.text_cons.config(state=DISABLED)
-        self.text_cons.see(END)
+        if self.new_user.is_connected:
+            self.text_cons.config(state=NORMAL)
+            self.text_cons.insert(END, message + "\n")
+            self.text_cons.config(state=DISABLED)
+            self.text_cons.see(END)
 
     def add_buttons(self):
         disconnect_btn = Button(self.window, text="Disconnect", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
@@ -74,7 +79,7 @@ class ChatGUI:
         disconnect_btn.place(relx=0.78, rely=0.85, relheight=0.04, relwidth=0.15)
 
         download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20, bg="#ABB2B9"
-                                 , command=lambda: self.button_action.handle_file_download())
+                                 , command=lambda: self.file_download_window())
         download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
     def add_chat_window(self):
@@ -114,21 +119,30 @@ class ChatGUI:
         scrollbar.config(command=self.text_cons.yview)
         self.text_cons.config(state=DISABLED)
 
-    def on_closing(self):
+    def close_chat(self):
         if messagebox.askokcancel("Quit", "Are you sure you want to disconnect?"):
             self.button_action.handle_disconnect()
+
+    def close_login(self):
+        if messagebox.askokcancel("Quit", "Are you sure you want to exit?"):
+            quit()
 
     def error_msg(self):
         error = Label(self.login, text="please enter a valid one word name", font="Helvetica 12")
         error.place(relheight=0.1, relx=0.18, rely=0.7)
 
-    def is_taken(self):
-        if not SocketHandler.get_msg(self.new_user.server):
-            self.new_user.disconnect()
-            self.taken_name_msg()
-            return False
-        return True
+    def is_available(self):
+        if SocketHandler.get_enum(self.new_user.server) == Actions.TRUE.value:
+            return True
+        self.new_user.disconnect()
+        self.taken_name_msg()
+        return False
 
     def taken_name_msg(self):
         error = Label(self.login, text="Name is taken, please try a different name", font="Helvetica 12")
         error.place(relheight=0.1, relx=0.18, rely=0.7)
+
+    def file_download_window(self):
+        file_window = Toplevel(self.window)
+        file_window.title("Choose your file")
+        file_window.configure(width=600, height=550)

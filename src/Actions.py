@@ -7,8 +7,5 @@ class Actions(enum.Enum):
     PRIVATE_MSG = b'P'
     FILE_LIST = b'F'
     MESSAGE_ALL = b'A'
-    VALID_NAME = b'V'
-
-
-
-
+    TRUE = b'Y'
+    FALSE = b'N'

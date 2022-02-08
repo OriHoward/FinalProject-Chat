@@ -28,3 +28,11 @@ class SocketHandler:
         except:
             conn.close()
             print("An error occurred in send_msg")
+
+    @staticmethod
+    def send_enum(enum, conn):
+        conn.send(enum)
+
+    @staticmethod
+    def get_enum(conn):
+        return conn.recv(1)

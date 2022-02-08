@@ -5,7 +5,6 @@ class ButtonsActions:
     def handle_disconnect(self):
         self.display_chat.new_user.disconnect()
         self.display_chat.window.destroy()
-        # self.display_chat.window.quit()
 
     def handle_file_download(self):
         pass
