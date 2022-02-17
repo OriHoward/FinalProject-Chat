@@ -34,7 +34,6 @@ class Server:
             is_free = self.handler.is_user_available(curr_name)
             SocketHandler.send_enum(Actions.TRUE.value if is_free else Actions.FALSE.value, conn)
             if not is_free:
-                conn.close()
                 continue
             self.handler.send_all(f"{curr_name} has joined the chat!")
             SocketHandler.send_msg("connection successful!", conn)

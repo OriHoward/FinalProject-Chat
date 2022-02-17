@@ -18,15 +18,12 @@ class User:
 
     def connect(self):
         try:
-            # self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.bind_port()
-            # self.server.bind(('', available_port))
             self.server.connect(self.address)
             SocketHandler.send_msg(self.user_name, self.server)
             print(self.server.getsockname())
             self.is_connected = True
-        except Exception as e:
-            print(e)
+        except:
             print("No connection")
 
     def disconnect(self):

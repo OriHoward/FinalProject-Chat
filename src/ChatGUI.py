@@ -19,16 +19,20 @@ class ChatGUI:
         self.login_label.place(relheight=0.1, relx=0.2, rely=0.07)
         self.label_name = Label(self.login, text="Enter your name: ", font="Helvetica 12")
         self.label_name.place(relheight=0.1, relx=0.03, rely=0.2)
+        self.label_address = Label(self.login, text="Enter server ip: ", font="Helvetica 12")
+        self.label_address.place(relheight=0.1, relx=0.03, rely=0.5)
         self.window.protocol("WM_DELETE_WINDOW", self.close_chat)
         self.login.protocol("WM_DELETE_WINDOW", self.close_login)
         self.entry_name = Entry(self.login, font="Helvetica 14")
         self.entry_name.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.2)
+        self.entry_address = Entry(self.login, font="Helvetica 14")
+        self.entry_address.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.5)
         self.entry_name.focus()
         self.button_action = ButtonActions.ButtonsActions(self)
         self.thread = threads.HandleThreads(self, self.button_action)
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
                           command=lambda: self.enter_main_window(self.entry_name.get()))
-        self.btn.place(relx=0.4, rely=0.4)
+        self.btn.place(relx=0.4, rely=0.75)
         ##todo destroy and terminate program if not logged in
         self.name = None
         self.text_cons = None
