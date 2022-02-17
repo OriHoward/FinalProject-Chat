@@ -1,16 +1,11 @@
 import socket
+
 from Actions import Actions
 from SocketHandler import SocketHandler
 
 FORMAT = 'utf-8'
-HEADER = 64
 GATEWAY_PORT = 50000
 PREFIX = '/'
-
-
-# UPPER_BOUND = 55015
-# LOWER_BOUND = 55000
-# ports = Ports(LOWER_BOUND, UPPER_BOUND)
 
 
 class User:
@@ -19,24 +14,24 @@ class User:
         self.ip = socket.gethostbyname(socket.gethostname())
         self.address = (self.ip, GATEWAY_PORT)
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.port = ports.check_for_ports()
-        # self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # self.server.bind(('', self.port))
-        # print(self.port)
         self.is_connected = False
 
     def connect(self):
         try:
+            # self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.bind_port()
+            # self.server.bind(('', available_port))
             self.server.connect(self.address)
             SocketHandler.send_msg(self.user_name, self.server)
+            print(self.server.getsockname())
             self.is_connected = True
-        except:
+        except Exception as e:
+            print(e)
             print("No connection")
 
     def disconnect(self):
         SocketHandler.send_enum(Actions.DISCONNECT.value, self.server)
         self.is_connected = False
-        # ports.ports[self.port - LOWER_BOUND] = False
 
     def get_users(self):
         SocketHandler.send_enum(Actions.USER_LIST.value, self.server)
@@ -65,3 +60,20 @@ class User:
 
     def get_file_list(self):
         pass
+
+    def bind_port(self):
+        taken_ports = 0
+        curr_port = 55000
+        is_found = False
+        while not is_found:
+            try:
+                self.server.bind(('', curr_port))
+                is_found = True
+            except:
+                curr_port += 1
+                taken_ports += 1
+
+            if taken_ports > 15:
+                print("couldn't find a free port within range - chat room is full")
+                exit(1)
+        return

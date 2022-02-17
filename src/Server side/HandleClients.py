@@ -1,12 +1,9 @@
 import socket
 
 from Client import Client
-from Ports import Ports
 from SocketHandler import SocketHandler
 
 GATEWAY_PORT = 50000
-LOWER_BOUND = 55000
-UPPER_BOUND = 55015
 IP = socket.gethostbyname(socket.gethostname())
 ADDR = (IP, GATEWAY_PORT)
 
@@ -14,7 +11,6 @@ ADDR = (IP, GATEWAY_PORT)
 class HandleClients:
     def __init__(self):
         self.clients: dict[str, Client] = {}
-        self.port = Ports()
 
     def add_client(self, client: Client):
         self.clients[client.user_name] = client
@@ -60,6 +56,3 @@ class HandleClients:
         if self.get_client(name) is None:
             return True
         return False
-
-    def get_port(self):
-        return self.port.receive_port()

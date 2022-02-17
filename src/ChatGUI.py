@@ -43,9 +43,7 @@ class ChatGUI:
             return False
         self.new_user = User(name)
         self.new_user.connect()
-        if not self.new_user.is_connected:
-            return
-        if not self.is_available():
+        if not self.is_name_free():
             return
         self.login.destroy()
         self.layout(name)
@@ -146,3 +144,10 @@ class ChatGUI:
         file_window = Toplevel(self.window)
         file_window.title("Choose your file")
         file_window.configure(width=600, height=550)
+
+    def is_name_free(self):
+        if not self.new_user.is_connected:
+            return False
+        if not self.is_available():
+            return False
+        return True
