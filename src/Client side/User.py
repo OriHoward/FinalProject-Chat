@@ -9,8 +9,11 @@ PREFIX = '/'
 
 
 class User:
-    def __init__(self, user_name: str = None):
+    def __init__(self, user_name: str = None, ip: str = "127.0.0.1"):
         self.user_name = user_name
+        # if ip == "localhost":
+        #     self.ip = "127.0.0.1"
+        # self.ip = ip
         self.ip = socket.gethostbyname(socket.gethostname())
         self.address = (self.ip, GATEWAY_PORT)
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,12 +54,17 @@ class User:
             case "whisper" | "w":
                 if len(msg) > 2:
                     self.send_private_msg(msg[2:], msg[1])
+            case "commands":
+                self.get_commands()
 
     def send_msg_to_all(self):
         SocketHandler.send_enum(Actions.MESSAGE_ALL.value, self.server)
 
     def get_file_list(self):
-        pass
+        SocketHandler.send_enum(Actions.FILE_LIST.value, self.server)
+
+    def get_commands(self):
+        SocketHandler.send_enum(Actions.COMMANDS.value, self.server)
 
     def bind_port(self):
         taken_ports = 0
@@ -74,3 +82,6 @@ class User:
                 print("couldn't find a free port within range - chat room is full")
                 exit(1)
         return
+
+    def download_file(self):
+        pass

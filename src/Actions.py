@@ -9,3 +9,4 @@ class Actions(enum.Enum):
     MESSAGE_ALL = b'A'
     TRUE = b'Y'
     FALSE = b'N'
+    COMMANDS = b'C'

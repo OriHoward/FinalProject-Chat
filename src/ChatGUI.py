@@ -14,26 +14,25 @@ class ChatGUI:
         self.login = Toplevel()
         self.login.title("Login")
         self.login.resizable(width=False, height=False)
-        self.login.configure(width=450, height=200)
+        self.login.configure(width=650, height=400)
         self.login_label = Label(self.login, text="Please login to continue", justify=CENTER, font="Helvetica 14 bold")
-        self.login_label.place(relheight=0.1, relx=0.2, rely=0.07)
+        self.login_label.place(relheight=0.1, relx=0.35, rely=0.07)
         self.label_name = Label(self.login, text="Enter your name: ", font="Helvetica 12")
         self.label_name.place(relheight=0.1, relx=0.03, rely=0.2)
         self.label_address = Label(self.login, text="Enter server ip: ", font="Helvetica 12")
-        self.label_address.place(relheight=0.1, relx=0.03, rely=0.5)
+        self.label_address.place(relheight=0.1, relx=0.03, rely=0.4)
         self.window.protocol("WM_DELETE_WINDOW", self.close_chat)
         self.login.protocol("WM_DELETE_WINDOW", self.close_login)
         self.entry_name = Entry(self.login, font="Helvetica 14")
         self.entry_name.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.2)
         self.entry_address = Entry(self.login, font="Helvetica 14")
-        self.entry_address.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.5)
+        self.entry_address.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.4)
         self.entry_name.focus()
         self.button_action = ButtonActions.ButtonsActions(self)
         self.thread = threads.HandleThreads(self, self.button_action)
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
-                          command=lambda: self.enter_main_window(self.entry_name.get()))
-        self.btn.place(relx=0.4, rely=0.75)
-        ##todo destroy and terminate program if not logged in
+                          command=lambda: self.enter_main_window(self.entry_name.get(), self.entry_address.get()))
+        self.btn.place(relx=0.45, rely=0.58)
         self.name = None
         self.text_cons = None
         self.new_user: User = None
@@ -41,11 +40,14 @@ class ChatGUI:
 
         self.window.mainloop()
 
-    def enter_main_window(self, name):
+    def enter_main_window(self, name, ip):
         if len(name) < 2 or " " in name or not name.isalpha():
             self.error_msg()
             return False
-        self.new_user = User(name)
+        if len(ip) == 0:
+            self.new_user = User(name, "localhost")
+        else:
+            self.new_user = User(name, ip)
         self.new_user.connect()
         if not self.is_name_free():
             return
@@ -131,7 +133,7 @@ class ChatGUI:
 
     def error_msg(self):
         error = Label(self.login, text="please enter a valid one word name", font="Helvetica 12")
-        error.place(relheight=0.1, relx=0.18, rely=0.7)
+        error.place(relheight=0.1, relx=0.33, rely=0.7)
 
     def is_available(self):
         if SocketHandler.get_enum(self.new_user.server) == Actions.TRUE.value:
@@ -142,7 +144,7 @@ class ChatGUI:
 
     def taken_name_msg(self):
         error = Label(self.login, text="Name is taken, please try a different name", font="Helvetica 12")
-        error.place(relheight=0.1, relx=0.18, rely=0.7)
+        error.place(relheight=0.1, relx=0.33, rely=0.7)
 
     def file_download_window(self):
         file_window = Toplevel(self.window)

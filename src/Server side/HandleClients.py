@@ -1,3 +1,4 @@
+import os
 import socket
 
 from Client import Client
@@ -56,3 +57,13 @@ class HandleClients:
         if self.get_client(name) is None:
             return True
         return False
+
+    def send_file_list(self, client: Client):
+        files_path = os.path.abspath("ServerFiles")
+        files_list = os.listdir(files_path)
+        msg = f"Server file list: {str(files_list)}"
+        SocketHandler.send_msg(msg, client.client_socket)
+
+    def send_commands_list(self, client: Client):
+        msg = "/users , /disconnect , /files , /whisper <client name> <msg>"
+        SocketHandler.send_msg(msg, client.client_socket)

@@ -54,5 +54,9 @@ class Server:
             case Actions.MESSAGE_ALL.value:
                 msg_to_distribute = SocketHandler.get_msg(curr_client.client_socket)
                 self.handler.send_all(msg_to_distribute)
+            case Actions.FILE_LIST.value:
+                self.handler.send_file_list(curr_client)
+            case Actions.COMMANDS.value:
+                self.handler.send_commands_list(curr_client)
 
     # todo thread to disconnect and close all ports from console
