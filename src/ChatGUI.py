@@ -55,9 +55,6 @@ class ChatGUI:
         self.layout(name)
         self.thread.start_receiver()
 
-    # exmaple to use later: for clicked.get() and .pack()
-    # new_button = Button(self.window, text="do something", command=self.do_something_accordingly())
-
     def layout(self, name):
         self.name = name
         self.window.deiconify()
@@ -99,7 +96,7 @@ class ChatGUI:
         entry_msg = Entry(bottom_label, bg="#2C3E50", fg="#EAECEE", font="Helvetica 13")
         entry_msg.place(relwidth=0.74, relheight=0.06, rely=0.008, relx=0.011)
         entry_msg.focus()
-        # sending the message with ENTER key:
+
         self.window.bind('<Return>', lambda event: self.send_msg(event, entry_msg.get(), entry_msg))
 
     def send_msg(self, event, msg, entry_msg):
@@ -148,8 +145,17 @@ class ChatGUI:
 
     def file_download_window(self):
         file_window = Toplevel(self.window)
+        file_label = Label(file_window, text="Enter file name to download",
+                           font="Helvetica 14 bold")
+        file_label.place(relheight=0.1, relx=0.25, rely=0.07)
+        entry_file_name = Entry(file_window, font="Helvetica 14")
+        entry_file_name.place(relwidth=0.5, relheight=0.15, relx=0.27, rely=0.3)
+        download_btn = Button(file_window, text="Download", font="Helvetica 14 bold",
+                              command=lambda: self.new_user.download_file(entry_file_name))
+        download_btn.place(relx=0.40, rely=0.58)
+        self.button_action.handle_file_download(entry_file_name.get())
         file_window.title("Choose your file")
-        file_window.configure(width=600, height=550)
+        file_window.configure(width=500, height=150)
 
     def is_name_free(self):
         if not self.new_user.is_connected:

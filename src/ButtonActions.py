@@ -6,5 +6,6 @@ class ButtonsActions:
         self.display_chat.new_user.disconnect()
         self.display_chat.window.destroy()
 
-    def handle_file_download(self):
-        pass
+    def handle_file_download(self, file_name):
+        if len(file_name) > 0:
+            self.display_chat.new_user.download_file(file_name)

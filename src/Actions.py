@@ -10,3 +10,5 @@ class Actions(enum.Enum):
     TRUE = b'Y'
     FALSE = b'N'
     COMMANDS = b'C'
+    OPEN_UDP = b'S'
+    CLOSE_UDP = b'E'

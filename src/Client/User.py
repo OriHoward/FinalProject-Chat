@@ -4,18 +4,21 @@ from Actions import Actions
 from SocketHandler import SocketHandler
 
 FORMAT = 'utf-8'
-GATEWAY_PORT = 50000
+GATEWAY_PORT_TCP = 50000
+GATEWAY_PORT_UDP = 60000
 PREFIX = '/'
+MSG_SIZE = 4096
 
 
 class User:
     def __init__(self, user_name: str = None, ip: str = "127.0.0.1"):
         self.user_name = user_name
-        # if ip == "localhost":
-        #     self.ip = "127.0.0.1"
-        # self.ip = ip
+        if ip == "localhost":
+            self.ip = "127.0.0.1"
+        self.ip = ip
         self.ip = socket.gethostbyname(socket.gethostname())
-        self.address = (self.ip, GATEWAY_PORT)
+        self.address = (self.ip, GATEWAY_PORT_TCP)
+        self.udp_address = (self.ip, GATEWAY_PORT_UDP)
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.is_connected = False
 
@@ -83,5 +86,22 @@ class User:
                 exit(1)
         return
 
-    def download_file(self):
+    def download_file(self, file_name):
+        self.open_udp_connection()
+
+        # self.close_udp_connection()
+
+    def open_udp_connection(self):
+        udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        SocketHandler.send_enum(Actions.OPEN_UDP.value, self.server)
+        udp_socket.sendto("ACK".encode(),self.udp_address)
+        msg, _ = udp_socket.recvfrom(3)
+        if msg.decode() == "SYN":
+            udp_socket.sendto("ACK".encode(), self.udp_address)
+        udp_socket.close()
+
+    def close_udp_connection(self):
+        SocketHandler.send_enum(Actions.CLOSE_UDP.value, self.server)
+
+    def three_way_hand_shake(self):
         pass
