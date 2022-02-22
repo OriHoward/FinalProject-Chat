@@ -1,4 +1,5 @@
 import socket
+from struct import unpack
 
 from Actions import Actions
 from SocketHandler import SocketHandler
@@ -20,6 +21,7 @@ class User:
         self.address = (self.ip, GATEWAY_PORT_TCP)
         self.udp_address = (self.ip, GATEWAY_PORT_UDP)
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.udp_socket = None
         self.is_connected = False
 
     def connect(self):
@@ -87,21 +89,57 @@ class User:
         return
 
     def download_file(self, file_name):
-        self.open_udp_connection()
-
-        # self.close_udp_connection()
-
-    def open_udp_connection(self):
-        udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         SocketHandler.send_enum(Actions.OPEN_UDP.value, self.server)
-        udp_socket.sendto("ACK".encode(),self.udp_address)
-        msg, _ = udp_socket.recvfrom(3)
-        if msg.decode() == "SYN":
-            udp_socket.sendto("ACK".encode(), self.udp_address)
+        if self.check_reliablity():
+            self.udp_socket.sendto(file_name.encode(), self.udp_address)
+            if self.udp_socket.recvfrom(1024)[0].decode() == "w":
+                self.close_udp_connection(self.udp_socket)
+                return
+        else:
+            self.close_udp_connection(self.udp_socket)
+            return
+        print("good")
+        self.close_udp_connection(self.udp_socket)
+
+    #
+    # def open_udp_connection(self):
+    #     self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #     SocketHandler.send_enum(Actions.OPEN_UDP.value, self.server)
+
+    # def open_udp_connection(self):
+    #     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #     SocketHandler.send_enum(Actions.OPEN_UDP.value, self.server)
+    #     udp_socket.sendto("ACK".encode(), self.udp_address)
+    #     msg, _ = udp_socket.recvfrom(3)
+    #     if msg.decode() == "SYN":
+    #         udp_socket.sendto("ACK".encode(), self.udp_address)
+    #     else:
+    #         udp_socket.close()
+    #         return
+
+    def close_udp_connection(self, udp_socket):
         udp_socket.close()
 
-    def close_udp_connection(self):
-        SocketHandler.send_enum(Actions.CLOSE_UDP.value, self.server)
+    def check_reliablity(self):
+        self.udp_socket.sendto("ACK".encode(), self.udp_address)
+        msg, _ = self.udp_socket.recvfrom(1024)
+        if msg.decode() == "SYN":
+            self.udp_socket.sendto("ACK".encode(), self.udp_address)
+            return True
+        else:
+            self.udp_socket.close()
+            return False
 
-    def three_way_hand_shake(self):
-        pass
+    def calculate_checksum(self, packet):
+        total = 0
+        num_words = len(packet) // 2
+        for chunk in unpack("!%sH" % num_words, packet[0:num_words * 2]):
+            total += chunk
+
+        if len(packet) % 2:
+            total += packet[-1] << 8
+
+        total = (total >> 16) + (total & 0xffff)
+        total += total >> 16
+        return ~total + 0x10000 & 0xffff

@@ -1,5 +1,6 @@
 import socket
 import threading
+from struct import unpack
 
 from Actions import Actions
 from Client import Client
@@ -68,22 +69,50 @@ class Server:
     def handle_client_udp(self, client: Client):
         server_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_udp.bind(ADDR_UDP)
-        if self.check_reliablity(server_udp):
-            SocketHandler.send_msg("opened UDP connection, ready to download", client.client_socket)
-        # self.handler.send_file(server_udp, "babibu")
-        server_udp.close()
+        data, addr = server_udp.recvfrom(1024)
+        if not self.check_reliablity(data, addr, server_udp):
+            server_udp.close()
+            return
+        file_name, _ = server_udp.recvfrom(1024)
+        file_name = file_name.decode()
+        if not self.handler.check_file_name(file_name):
+            SocketHandler.send_msg("file name not found, try again.", client.client_socket)
+            server_udp.sendto("w".encode(),addr)
+            return
+        else:
+            server_udp.sendto("g".encode(), addr)
+            file_path = f'ServerFiles/{file_name}'
+            f = open(file_path, "r")
+            data = f.read(500)
+            print(len(data))
+            print(data)
 
-    def check_reliablity(self, server_udp):
-        data, addr = server_udp.recvfrom(3)
+        # window_size = 4
+        # while True:
+        #     start_window_size = 0
+        #     packets_sent: list = []
+        #     expected_acks: list = []
+        #
+        # server_udp.close()
+
+    def check_reliablity(self, data, addr, server_udp):
         if data.decode() == "ACK":
             server_udp.sendto("SYN".encode(), addr)
             data, _ = server_udp.recvfrom(3)
             return True
         return False
 
-    # def fake_server(self):
-    #     self.server.listen(0)
-    #     self.server.accept()
-    #     self.server.close()
+    def calculate_checksum(self, packet):
+        total = 0
+        num_words = len(packet) // 2
+        for chunk in unpack("!%sH" % num_words, packet[0:num_words * 2]):
+            total += chunk
+
+        if len(packet) % 2:
+            total += packet[-1] << 8
+
+        total = (total >> 16) + (total & 0xffff)
+        total += total >> 16
+        return ~total + 0x10000 & 0xffff
 
     # todo thread to disconnect and close all ports from console

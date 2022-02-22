@@ -1,5 +1,3 @@
-
-
 FORMAT = 'utf-8'
 
 
@@ -31,8 +29,14 @@ class SocketHandler:
 
     @staticmethod
     def send_enum(enum, conn):
-        conn.send(enum)
+        try:
+            conn.send(enum)
+        except:
+            print("An error occured in send_enum")
 
     @staticmethod
     def get_enum(conn):
-        return conn.recv(1)
+        try:
+            return conn.recv(1)
+        except:
+            print("An error occured in get_enum")

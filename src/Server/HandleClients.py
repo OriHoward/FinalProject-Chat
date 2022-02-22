@@ -1,6 +1,5 @@
 import os
 import socket
-from struct import unpack
 
 from Client import Client
 from SocketHandler import SocketHandler
@@ -69,30 +68,10 @@ class HandleClients:
         msg = "/users , /disconnect , /files , /whisper <client name> <msg>"
         SocketHandler.send_msg(msg, client.client_socket)
 
-    # def send_file(self, server_udp: socket, file):
-    #     offset = 0
-    #     sequence_num = 0
-    #     segment = 2
-    #     packets_list = self.create_packet_list(file, segment)
-    #
-    # # def create_packet(self, packet_list, sequence):
-    # #     pass
-    #
-    # def create_packet_list(self, file, segment):
-    #
-    #     packets = []
-
-
-    def checksum(self):
-        def calculate_icmpv6_checksum(packet):
-            total = 0
-            num_words = len(packet) // 2
-            for chunk in unpack("!%sH" % num_words, packet[0:num_words * 2]):
-                total += chunk
-
-            if len(packet) % 2:
-                total += packet[-1] << 8
-
-            total = (total >> 16) + (total & 0xffff)
-            total += total >> 16
-            return ~total + 0x10000 & 0xffff
+    def check_file_name(self, file_name):
+        files_path = os.path.abspath("ServerFiles")
+        files_list = os.listdir(files_path)
+        if file_name in files_list:
+            return True
+        else:
+            return False

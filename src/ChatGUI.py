@@ -78,9 +78,10 @@ class ChatGUI:
         disconnect_btn = Button(self.window, text="Disconnect", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
                                 command=lambda: self.button_action.handle_disconnect())
         disconnect_btn.place(relx=0.78, rely=0.85, relheight=0.04, relwidth=0.15)
-
         download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20, bg="#ABB2B9"
-                                 , command=lambda: self.file_download_window())
+                                 , command=lambda: self.handle_functions())
+        # download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20, bg="#ABB2B9"
+        #                          , command=lambda: self.file_download_window())
         download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
     def add_chat_window(self):
@@ -98,6 +99,10 @@ class ChatGUI:
         entry_msg.focus()
 
         self.window.bind('<Return>', lambda event: self.send_msg(event, entry_msg.get(), entry_msg))
+
+    def handle_functions(self):
+        # self.button_action.handle_udp_connection()
+        self.file_download_window()
 
     def send_msg(self, event, msg, entry_msg):
         self.text_cons.config(state=DISABLED)
@@ -151,7 +156,7 @@ class ChatGUI:
         entry_file_name = Entry(file_window, font="Helvetica 14")
         entry_file_name.place(relwidth=0.5, relheight=0.15, relx=0.27, rely=0.3)
         download_btn = Button(file_window, text="Download", font="Helvetica 14 bold",
-                              command=lambda: self.new_user.download_file(entry_file_name))
+                              command=lambda: self.new_user.download_file(entry_file_name.get()))
         download_btn.place(relx=0.40, rely=0.58)
         self.button_action.handle_file_download(entry_file_name.get())
         file_window.title("Choose your file")
