@@ -99,24 +99,9 @@ class User:
         else:
             self.close_udp_connection(self.udp_socket)
             return
+        ## send to function that takes care of everything here
         print("good")
         self.close_udp_connection(self.udp_socket)
-
-    #
-    # def open_udp_connection(self):
-    #     self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #     SocketHandler.send_enum(Actions.OPEN_UDP.value, self.server)
-
-    # def open_udp_connection(self):
-    #     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #     SocketHandler.send_enum(Actions.OPEN_UDP.value, self.server)
-    #     udp_socket.sendto("ACK".encode(), self.udp_address)
-    #     msg, _ = udp_socket.recvfrom(3)
-    #     if msg.decode() == "SYN":
-    #         udp_socket.sendto("ACK".encode(), self.udp_address)
-    #     else:
-    #         udp_socket.close()
-    #         return
 
     def close_udp_connection(self, udp_socket):
         udp_socket.close()

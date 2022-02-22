@@ -1,5 +1,6 @@
 import socket
 import threading
+from functools import partial
 from struct import unpack
 
 from Actions import Actions
@@ -20,6 +21,7 @@ class Server:
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind(ADDR_TCP)
+        self.udp_socket = None
         self.handler = HandleClients()
 
     def handle_client(self, conn, addr, curr_client: Client):
@@ -67,38 +69,52 @@ class Server:
                 self.handle_client_udp(client)
 
     def handle_client_udp(self, client: Client):
-        server_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        server_udp.bind(ADDR_UDP)
-        data, addr = server_udp.recvfrom(1024)
-        if not self.check_reliablity(data, addr, server_udp):
-            server_udp.close()
+        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_socket.bind(ADDR_UDP)
+        data, addr = self.udp_socket.recvfrom(1024)
+        if not self.check_reliablity(data, addr):
+            self.udp_socket.close()
             return
-        file_name, _ = server_udp.recvfrom(1024)
+        file_name, _ = self.udp_socket.recvfrom(1024)
         file_name = file_name.decode()
         if not self.handler.check_file_name(file_name):
             SocketHandler.send_msg("file name not found, try again.", client.client_socket)
-            server_udp.sendto("w".encode(),addr)
+            self.udp_socket.sendto("w".encode(), addr)
             return
         else:
-            server_udp.sendto("g".encode(), addr)
+            self.udp_socket.sendto("g".encode(), addr)
             file_path = f'ServerFiles/{file_name}'
-            f = open(file_path, "r")
-            data = f.read(500)
-            print(len(data))
-            print(data)
+            packets = self.create_packets_list(file_path)
+            for p in packets:
+                print(p)
+            self.udp_socket.close()
 
-        # window_size = 4
-        # while True:
-        #     start_window_size = 0
-        #     packets_sent: list = []
-        #     expected_acks: list = []
-        #
-        # server_udp.close()
+    def create_packets_list(self, file_path):
+        packets = []
+        sequence_num = 0
+        with open(file_path, 'rb', 0) as f:
+            while True:
+                data = f.read(50)
+                if not data:
+                    break
+                else:
+                    checksum = self.calculate_checksum(data)
+                    packets.append(f'{sequence_num},{checksum},{data}')
+                    sequence_num += 1
+        return packets
 
-    def check_reliablity(self, data, addr, server_udp):
+    # window_size = 4
+    # while True:
+    #     start_window_size = 0
+    #     packets_sent: list = []
+    #     expected_acks: list = []
+    #
+    # self.udp_socket.close()
+
+    def check_reliablity(self, data, addr):
         if data.decode() == "ACK":
-            server_udp.sendto("SYN".encode(), addr)
-            data, _ = server_udp.recvfrom(3)
+            self.udp_socket.sendto("SYN".encode(), addr)
+            data, _ = self.udp_socket.recvfrom(3)
             return True
         return False
 
