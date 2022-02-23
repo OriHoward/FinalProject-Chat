@@ -20,9 +20,9 @@ class HandleThreads:
         thread.start()
 
     def receive(self):
-        while self.display_chat.new_user.is_connected:
+        while self.display_chat.user.is_connected:
             try:
-                message = SocketHandler.get_msg(self.display_chat.new_user.server)
+                message = SocketHandler.get_msg(self.display_chat.user.server)
                 self.display_chat.update_chat_display(message)
             except:
                 print("An error occurred in receive thread")
@@ -33,8 +33,8 @@ class HandleThreads:
         self.display_chat.text_cons.config(state=DISABLED)
         if len(msg) > 0:
             if msg[0] == PREFIX:
-                self.display_chat.new_user.action_received(msg)
+                self.display_chat.user.action_received(msg)
             else:
-                self.display_chat.new_user.send_msg_to_all()
+                self.display_chat.user.send_msg_to_all()
                 message = f"{self.display_chat.name}: {msg}"
-                SocketHandler.send_msg(message, self.display_chat.new_user.server)
+                SocketHandler.send_msg(message, self.display_chat.user.server)

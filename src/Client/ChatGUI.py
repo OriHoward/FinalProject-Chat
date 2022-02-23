@@ -8,7 +8,7 @@ from User import User
 
 
 class ChatGUI:
-    def __init__(self):
+    def __init__(self, user: User):
         self.window = Tk()
         self.window.withdraw()
         self.login = Toplevel()
@@ -30,27 +30,45 @@ class ChatGUI:
         self.entry_name.focus()
         self.button_action = ButtonActions.ButtonsActions(self)
         self.thread = threads.HandleThreads(self, self.button_action)
+        self.user = user
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
-                          command=lambda: self.enter_main_window(self.entry_name.get(), self.entry_address.get()))
+                          command=lambda: self.validation(self.entry_name.get(), self.entry_address.get()))
+        # self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
+        #                   command=lambda: self.enter_main_window(self.entry_name.get(), self.entry_address.get()))
         self.btn.place(relx=0.45, rely=0.58)
         self.name = None
         self.text_cons = None
-        self.new_user: User = None
+        # self.new_user: User = None
         self.msg = None
 
         self.window.mainloop()
 
-    def enter_main_window(self, name, ip):
-        if len(name) < 2 or " " in name or not name.isalpha():
+    def validation(self, name, address):
+        if not self.is_valid(name):
             self.error_msg()
-            return False
-        if len(ip) == 0:
-            self.new_user = User(name, "localhost")
-        else:
-            self.new_user = User(name, ip)
-        self.new_user.connect()
-        if not self.is_name_free():
             return
+        if len(address) > 0:
+            self.user.set_address(address)
+        self.user.set_username(name)
+        self.user.connect()
+        if not self.is_name_free():
+            # self.user.disconnect()
+            self.taken_name_msg()
+            return
+
+        self.enter_main_window(name)
+
+    def enter_main_window(self, name):
+        # if len(name) < 2 or " " in name or not name.isalpha():
+        #     self.error_msg()
+        #     return False
+        # if len(ip) == 0:
+        #     self.new_user = User(name, "localhost")
+        # else:
+        #     # self.new_user = User(name, ip)
+        # self.new_user.connect()
+        # if not self.is_name_free():
+        #     return
         self.login.destroy()
         self.layout(name)
         self.thread.start_receiver()
@@ -68,7 +86,7 @@ class ChatGUI:
         self.add_scrollbar()
 
     def update_chat_display(self, message):
-        if self.new_user.is_connected:
+        if self.user.is_connected:
             self.text_cons.config(state=NORMAL)
             self.text_cons.insert(END, message + "\n")
             self.text_cons.config(state=DISABLED)
@@ -138,10 +156,10 @@ class ChatGUI:
         error.place(relheight=0.1, relx=0.33, rely=0.7)
 
     def is_available(self):
-        if SocketHandler.get_enum(self.new_user.server) == Actions.TRUE.value:
+        if SocketHandler.get_enum(self.user.server) == Actions.TRUE.value:
             return True
-        self.new_user.disconnect()
-        self.taken_name_msg()
+        # self.user.disconnect()
+        # self.taken_name_msg()
         return False
 
     def taken_name_msg(self):
@@ -156,15 +174,26 @@ class ChatGUI:
         entry_file_name = Entry(file_window, font="Helvetica 14")
         entry_file_name.place(relwidth=0.5, relheight=0.15, relx=0.27, rely=0.3)
         download_btn = Button(file_window, text="Download", font="Helvetica 14 bold",
-                              command=lambda: self.new_user.download_file(entry_file_name.get()))
+                              command=lambda: self.user.download_file(entry_file_name.get()))
         download_btn.place(relx=0.40, rely=0.58)
         self.button_action.handle_file_download(entry_file_name.get())
         file_window.title("Choose your file")
         file_window.configure(width=500, height=150)
 
     def is_name_free(self):
-        if not self.new_user.is_connected:
+        if not self.user.is_connected:
             return False
         if not self.is_available():
             return False
         return True
+
+    def is_valid(self, name):
+        return len(name) > 1 and not " " in name and name.isalpha()\
+               and self.is_english(name)
+
+    def is_english(self, name):
+        try:
+            name.encode(encoding='utf-8').decode('ascii')
+            return True
+        except:
+            return False
