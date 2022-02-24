@@ -87,9 +87,9 @@ class Server:
             file_path = f'ServerFiles/{file_name}'
             packets = self.create_packets_list(file_path)
             self.send_packets(packets, addr)
-            # for p in packets:
-            #     print(p)
-            # self.udp_socket.close()
+            for p in packets:
+                print(p)
+            self.udp_socket.close()
 
     def create_packets_list(self, file_path):
         packets = []
@@ -108,25 +108,33 @@ class Server:
     def send_packets(self, packets: list, addr):
         window_size = 4
         packets_not_sent: list = list(range(0, len(packets)))
-        expected_acks: list = []
-        acks_sent = []
-        sent_all = False
-        while sent_all:
-            start_window_size = 0
-            print("sending packet size to client..")
-            self.udp_socket.sendto(str(len(packets)).encode(), addr)
-            end_window_size = start_window_size + window_size
-            while end_window_size < len(packets):
-                expected_acks.clear()
-                for pkt in range(window_size):
-                    if pkt in packets_not_sent:
-                        self.udp_socket.sendto(packets[pkt], addr)
-                        ack = self.udp_socket.recvfrom(MSG_SIZE)
-                        acks_sent.append(ack)
-                        expected_acks.append(f"ACK {pkt}")
-                ## compare expected acks vs acks and remove from sent
+        expected_acks: dict = {}
+        acks_sent: dict = {}
+        # start_window_size = 0
+        print("sending packet size to client..")
+        self.udp_socket.sendto(str(len(packets)).encode(), addr)
+        # end_window_size = start_window_size + window_size
+        while len(packets_not_sent) > 0:
+            expected_acks.clear()
+            for pkt in range(1):
+                if pkt in packets_not_sent:
+                    self.udp_socket.sendto(packets[pkt].encode(), addr)
+                    ack = self.udp_socket.recvfrom(MSG_SIZE)
+                    acks_sent[pkt] = ack
+                    expected_acks[pkt] = "ACK"
+            arrived = self.check_lost_pkts(acks_sent, expected_acks, packets_not_sent)
+            window_size += arrived
 
-        # self.udp_socket.close()
+    # self.udp_socket.close()
+
+    def check_lost_pkts(self, aks_sent: dict, exepcted_akcs: dict, packets_not_sent: list):
+        arrived = 0
+        for key in aks_sent.keys():
+            if aks_sent[key] == exepcted_akcs[key]:
+                packets_not_sent.remove(key)
+            else:
+                arrived += 1
+        return arrived
 
     def check_reliablity(self, data, addr):
         if data.decode() == "ACK":
@@ -148,4 +156,4 @@ class Server:
         total += total >> 16
         return ~total + 0x10000 & 0xffff
 
-    # todo thread to disconnect and close all ports from console
+# todo thread to disconnect and close all ports from console

@@ -116,7 +116,14 @@ class User:
         self.close_udp_connection(self.udp_socket)
 
     def get_packets(self):
-        pass
+        num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
+        received_all = False
+        while not received_all:
+            curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
+            curr_pkt = curr_pkt.split(',')
+            seq_num = curr_pkt[0]
+            checksum = curr_pkt[1]
+            data = ''.join(curr_pkt[2])
 
     def close_udp_connection(self, udp_socket):
         udp_socket.close()
