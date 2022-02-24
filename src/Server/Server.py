@@ -87,10 +87,8 @@ class Server:
             self.udp_socket.sendto("g".encode(), addr)
             file_path = f'ServerFiles/{file_name}'
             packets = self.create_packets_list(file_path)
-            for p in packets:
-                print(p)
-                break
             self.send_packets(packets, addr)
+            self.udp_socket.sendto(file_name.encode(),addr)
             self.udp_socket.close()
 
     def create_packets_list(self, file_path):
@@ -119,7 +117,7 @@ class Server:
         print("sent successfully")
         while len(packets_not_sent) > 0:
             expected_acks.clear()
-            sleep(2)
+            sleep(0.2)
             for pkt in range(window_size):
                 if pkt in packets_not_sent:
                     print(f"sending packet number: {pkt}")

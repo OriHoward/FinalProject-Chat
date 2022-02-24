@@ -117,25 +117,35 @@ class User:
         self.close_udp_connection(self.udp_socket)
 
     def get_packets(self):
-        packets: dict = {}
+        packets_received: dict = {}
         num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
-        print("num of expected packets received from server")
-        while len(packets) < int(num_of_pkts):
-            sleep(2)
+        print(f"number of expected packets received from server: {num_of_pkts}")
+        while len(packets_received) < int(num_of_pkts):
+            sleep(0.2)
             curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
             curr_pkt = pickle.loads(curr_pkt)
             seq_num = curr_pkt[0]
             data_chunk_checksum = curr_pkt[1]
             data_chunk = curr_pkt[2]
 
-            if self.calculate_checksum(data_chunk) != int(data_chunk_checksum):
+            if self.calculate_checksum(data_chunk) != data_chunk_checksum:
                 self.udp_socket.sendto(f"NACK,{seq_num}".encode(), self.udp_address)
                 print(f"packet number {seq_num} got lost, sending NACK...")
             else:
                 self.udp_socket.sendto(f"ACK,{seq_num}".encode(), self.udp_address)
-                packets[seq_num] = data_chunk
+                packets_received[seq_num] = data_chunk
                 print(f"packet number {seq_num} received, sending ACK...", )
-        print("finished")
+        print("RECEIVED ALL PACKETS SUCCESSFULLY")
+        file_name = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
+        self.write_files(packets_received,file_name)
+
+    def write_files(self, packets_received,file_name):
+        file_name = f"{file_name}_copy"
+        f = open(file_name,"wb")
+        for _ , value in sorted(packets_received.items()):
+            f.write(value)
+
+
 
     def close_udp_connection(self, udp_socket):
         udp_socket.close()
