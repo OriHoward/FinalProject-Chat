@@ -1,7 +1,8 @@
 import socket
 import threading
+from time import sleep
 from struct import unpack
-
+import pickle
 from Actions import Actions
 from Client import Client
 from HandleClients import HandleClients
@@ -86,9 +87,10 @@ class Server:
             self.udp_socket.sendto("g".encode(), addr)
             file_path = f'ServerFiles/{file_name}'
             packets = self.create_packets_list(file_path)
-            self.send_packets(packets, addr)
             for p in packets:
                 print(p)
+                break
+            self.send_packets(packets, addr)
             self.udp_socket.close()
 
     def create_packets_list(self, file_path):
@@ -101,7 +103,9 @@ class Server:
                     break
                 else:
                     checksum = self.calculate_checksum(data)
-                    packets.append(f'{sequence_num},{checksum},{data}')
+                    pkt = [sequence_num, checksum, data]
+                    pkt = pickle.dumps(pkt)
+                    packets.append(pkt)
                     sequence_num += 1
         return packets
 
@@ -110,30 +114,36 @@ class Server:
         packets_not_sent: list = list(range(0, len(packets)))
         expected_acks: dict = {}
         acks_sent: dict = {}
-        # start_window_size = 0
-        print("sending packet size to client..")
+        print("sending number of packets..")
         self.udp_socket.sendto(str(len(packets)).encode(), addr)
-        # end_window_size = start_window_size + window_size
+        print("sent successfully")
         while len(packets_not_sent) > 0:
             expected_acks.clear()
-            for pkt in range(1):
+            sleep(2)
+            for pkt in range(window_size):
                 if pkt in packets_not_sent:
-                    self.udp_socket.sendto(packets[pkt].encode(), addr)
-                    ack = self.udp_socket.recvfrom(MSG_SIZE)
-                    acks_sent[pkt] = ack
+                    print(f"sending packet number: {pkt}")
+                    self.udp_socket.sendto(packets[pkt], addr)
+                    ack = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
+                    print("received response from client")
+                    ack = ack.split(',')
+                    print(f"{ack[1]}, {ack[0]}")
+                    acks_sent[int(ack[1])] = ack[0]
                     expected_acks[pkt] = "ACK"
+                    print("-------------")
             arrived = self.check_lost_pkts(acks_sent, expected_acks, packets_not_sent)
+            print(f"arrived {arrived} packets")
             window_size += arrived
-
-    # self.udp_socket.close()
 
     def check_lost_pkts(self, aks_sent: dict, exepcted_akcs: dict, packets_not_sent: list):
         arrived = 0
-        for key in aks_sent.keys():
+        for key in exepcted_akcs.keys():
+            print(key)
             if aks_sent[key] == exepcted_akcs[key]:
+                print(f"packet number {key} sent successfully, removing from list..")
                 packets_not_sent.remove(key)
-            else:
                 arrived += 1
+
         return arrived
 
     def check_reliablity(self, data, addr):

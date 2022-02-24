@@ -1,5 +1,6 @@
 import socket
 from struct import unpack
+from time import sleep
 
 from Actions import Actions
 from SocketHandler import SocketHandler
@@ -10,6 +11,7 @@ GATEWAY_PORT_UDP = 60000
 PREFIX = '/'
 MSG_SIZE = 4096
 DEFAULT_IP = socket.gethostbyname(socket.gethostname())
+import pickle
 
 
 class User:
@@ -112,18 +114,28 @@ class User:
             return
         self.get_packets()
         ## send to function that takes care of everything here
-        print("good")
         self.close_udp_connection(self.udp_socket)
 
     def get_packets(self):
+        packets: dict = {}
         num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
-        received_all = False
-        while not received_all:
-            curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
-            curr_pkt = curr_pkt.split(',')
+        print("num of expected packets received from server")
+        while len(packets) < int(num_of_pkts):
+            sleep(2)
+            curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
+            curr_pkt = pickle.loads(curr_pkt)
             seq_num = curr_pkt[0]
-            checksum = curr_pkt[1]
-            data = ''.join(curr_pkt[2])
+            data_chunk_checksum = curr_pkt[1]
+            data_chunk = curr_pkt[2]
+
+            if self.calculate_checksum(data_chunk) != int(data_chunk_checksum):
+                self.udp_socket.sendto(f"NACK,{seq_num}".encode(), self.udp_address)
+                print(f"packet number {seq_num} got lost, sending NACK...")
+            else:
+                self.udp_socket.sendto(f"ACK,{seq_num}".encode(), self.udp_address)
+                packets[seq_num] = data_chunk
+                print(f"packet number {seq_num} received, sending ACK...", )
+        print("finished")
 
     def close_udp_connection(self, udp_socket):
         udp_socket.close()
