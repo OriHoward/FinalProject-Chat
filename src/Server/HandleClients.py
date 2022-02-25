@@ -34,12 +34,12 @@ class HandleClients:
         for client in self.get_clients():
             client_list += f"{client},"
         client_list = client_list[:len(client_list) - 1]
-        SocketHandler.send_msg(f"Connected users: {client_list}", conn)
+        SocketHandler.send_msg(f"SERVER: Connected users: {client_list}", conn)
 
     def handle_private_msg(self, client: Client):
         dst_client_user_name = SocketHandler.get_msg(client.client_socket)
         if self.clients.get(dst_client_user_name) is None:
-            SocketHandler.send_msg(f"Client {dst_client_user_name} is not connected", client.client_socket)
+            SocketHandler.send_msg(f"SERVER: Client {dst_client_user_name} is not connected", client.client_socket)
         else:
             dst_client_socket = self.get_client(dst_client_user_name).client_socket
             msg = SocketHandler.get_msg(client.client_socket)
@@ -51,7 +51,7 @@ class HandleClients:
     def disconnect(self, client):
         self.remove_client(client)
         client.disconnect()
-        self.send_all(f"{client.user_name} has disconnected")
+        self.send_all(f"SERVER: {client.user_name} has disconnected")
 
     def is_user_available(self, name):
         if self.get_client(name) is None:
@@ -61,12 +61,12 @@ class HandleClients:
     def send_file_list(self, client: Client):
         files_path = os.path.abspath("ServerFiles")
         files_list = os.listdir(files_path)
-        msg = f"Server file list: {str(files_list)}"
+        msg = f"SERVER: Server file list: {str(files_list)}"
         SocketHandler.send_msg(msg, client.client_socket)
 
     def send_commands_list(self, client: Client):
-        msg = "/users - get a list of all connected users\n" \
-              "/disconnect - disconnect from chat\n" \
+        msg = "SERVER: /users - get a list of all connected users\n" \
+              "-/disconnect - disconnect from chat\n" \
               "/files - get a list of all the files\n" \
               "/whisper <client name> <msg> - send a private message to another user"
         SocketHandler.send_msg(msg, client.client_socket)

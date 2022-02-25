@@ -1,7 +1,8 @@
-import socket
-from struct import unpack
-from time import sleep
+import time
 
+import select
+import socket
+import pickle
 from Actions import Actions
 from SocketHandler import SocketHandler
 
@@ -9,9 +10,8 @@ FORMAT = 'utf-8'
 GATEWAY_PORT_TCP = 50000
 GATEWAY_PORT_UDP = 60000
 PREFIX = '/'
-MSG_SIZE = 4096
+MSG_SIZE = 55000
 DEFAULT_IP = socket.gethostbyname(socket.gethostname())
-import pickle
 
 
 class User:
@@ -26,7 +26,6 @@ class User:
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.udp_socket = None
         self.is_connected = False
-        self.reuse_socket = False
 
     def set_username(self, username):
         self.user_name = username
@@ -112,63 +111,52 @@ class User:
         else:
             self.close_udp_connection(self.udp_socket)
             return
-        self.get_packets()
-        ## send to function that takes care of everything here
+        self.get_packets(file_name)
         self.close_udp_connection(self.udp_socket)
 
-    def get_packets(self):
+    def get_packets(self, file_name):
         packets_received: dict = {}
+        arrived = 0
+        expected_seq = 0
         num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
         print(f"number of expected packets received from server: {num_of_pkts}")
+        # self.udp_socket.settimeout(0.00005)
         while len(packets_received) < int(num_of_pkts):
-            sleep(0.2)
-            curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
-            curr_pkt = pickle.loads(curr_pkt)
-            seq_num = curr_pkt[0]
-            data_chunk_checksum = curr_pkt[1]
-            data_chunk = curr_pkt[2]
+            try:
+                curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
+                curr_pkt = pickle.loads(curr_pkt)
+                seq_num = curr_pkt[0]
+                data_chunk = curr_pkt[1]
+                self.udp_socket.sendto(f"{seq_num}".encode(), self.udp_address)
+                if packets_received.get(seq_num) is None:
+                    packets_received[seq_num] = data_chunk
+                    arrived += 1
+                    print(f"packet number {seq_num} received, sending ACK...", )
 
-            if self.calculate_checksum(data_chunk) != data_chunk_checksum:
-                self.udp_socket.sendto(f"NACK,{seq_num}".encode(), self.udp_address)
-                print(f"packet number {seq_num} got lost, sending NACK...")
-            else:
-                self.udp_socket.sendto(f"ACK,{seq_num}".encode(), self.udp_address)
-                packets_received[seq_num] = data_chunk
-                print(f"packet number {seq_num} received, sending ACK...", )
+
+            except Exception as e:
+                print(e)
+
         print("RECEIVED ALL PACKETS SUCCESSFULLY")
-        file_name = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
-        self.write_files(packets_received,file_name)
+        self.write_files(packets_received, file_name)
 
-    def write_files(self, packets_received,file_name):
-        file_name = f"{file_name}_copy"
-        f = open(file_name,"wb")
-        for _ , value in sorted(packets_received.items()):
+    def write_files(self, packets_received, file_name: str):
+        file_name = file_name.split('.')
+        file_name = f"{file_name[0]}_copy.{file_name[1]}"
+        f = open(file_name, "wb")
+        for key, value in sorted(packets_received.items()):
             f.write(value)
-
-
 
     def close_udp_connection(self, udp_socket):
         udp_socket.close()
 
     def check_reliablity(self):
+        time.sleep(0.25)
         self.udp_socket.sendto("ACK".encode(), self.udp_address)
-        msg, _ = self.udp_socket.recvfrom(MSG_SIZE)
+        msg = self.udp_socket.recvfrom(MSG_SIZE)[0]
         if msg.decode() == "SYN":
             self.udp_socket.sendto("ACK".encode(), self.udp_address)
             return True
         else:
             self.udp_socket.close()
             return False
-
-    def calculate_checksum(self, packet):
-        total = 0
-        num_words = len(packet) // 2
-        for chunk in unpack("!%sH" % num_words, packet[0:num_words * 2]):
-            total += chunk
-
-        if len(packet) % 2:
-            total += packet[-1] << 8
-
-        total = (total >> 16) + (total & 0xffff)
-        total += total >> 16
-        return ~total + 0x10000 & 0xffff
