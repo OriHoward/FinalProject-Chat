@@ -114,6 +114,7 @@ class User:
             return
         self.get_packets(file_name)
         self.close_udp_connection(self.udp_socket)
+        print(self.received_half_file)
         return True
 
     def get_packets(self, file_name):
@@ -147,6 +148,7 @@ class User:
         f = open(file_name, "wb")
         for _, value in sorted(packets_received.items()):
             f.write(value)
+        self.packets_received.clear()
 
     def close_udp_connection(self, udp_socket):
         udp_socket.close()

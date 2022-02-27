@@ -111,8 +111,6 @@ class Server:
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
                 self.udp_socket.close()
 
-
-
     def get_last_file_bytes(self, file_path):
         with open(file_path, 'rb') as f:
             return f.read()[-1:]
