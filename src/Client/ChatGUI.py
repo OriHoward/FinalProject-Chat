@@ -34,6 +34,7 @@ class ChatGUI:
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
                           command=lambda: self.validation(self.entry_name.get(), self.entry_address.get()))
         self.btn.place(relx=0.45, rely=0.58)
+        self.download_button = None
         self.name = None
         self.text_cons = None
         self.msg = None
@@ -83,9 +84,10 @@ class ChatGUI:
         disconnect_btn = Button(self.window, text="Disconnect", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
                                 command=lambda: self.button_action.handle_disconnect())
         disconnect_btn.place(relx=0.78, rely=0.85, relheight=0.04, relwidth=0.15)
-        download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20, bg="#ABB2B9"
-                                 , command=lambda: self.file_download_window())
-        download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
+        self.download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20,
+                                      bg="#ABB2B9"
+                                      , command=lambda: self.file_download_window())
+        self.download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
     def add_chat_window(self):
         name_label = Label(self.window, bg="#17202A", fg="#EAECEE", text=self.name, font="Helvetica 13 bold", pady=5)
@@ -150,25 +152,26 @@ class ChatGUI:
         file_label.place(relheight=0.1, relx=0.25, rely=0.07)
         entry_file_name = Entry(file_window, font="Helvetica 14")
         entry_file_name.place(relwidth=0.5, relheight=0.15, relx=0.27, rely=0.3)
+        button_to_create = Button(self.window, text="Proceed", font="Helvetica 14 bold", bg="#ABB2B9",
+                                  command=lambda: self.button_action.proceed_download(button_to_create))
         download_btn = Button(file_window, text="Download", font="Helvetica 14 bold",
                               command=lambda: self.button_action.handle_file_download(entry_file_name.get(),
-                                                                                      file_window))
+                                                                                      file_window,
+                                                                                      self.download_button,
+                                                                                      button_to_create))
         download_btn.place(relx=0.40, rely=0.58)
         file_window.title("Choose your file")
         file_window.configure(width=500, height=150)
 
-    def pop_proceed_window(self):
-        proceed_window = Toplevel(self.window)
-        message = Label(proceed_window, text="do you wish to proceed downloading the file?",
-                        font="Helvetica 14 bold")
-        message.place(relheight=0.1, relx=0.24, rely=0.07)
-        proceed_btn = Button(proceed_window, text="proceed", font="Helvetica 14 bold",
-                             command=lambda: self.button_action.proceed_download(proceed_window))
-        proceed_btn.place(relx=0.70, rely=0.58)
-        exit_btn = Button(proceed_window, text="Download later", font="Helvetica 14 bold",
-                          command=lambda: self.button_action.exit_window(proceed_window))
-        exit_btn.place(relx=0.2, rely=0.58)
-        proceed_window.configure(width=600, height=250)
+    def swap_buttons(self, button_to_destroy, button_to_create):
+        button_to_destroy.destroy()
+        button_to_create.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
+
+    def recreate_download_btn(self, button_to_destroy):
+        self.download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20,
+                                      bg="#ABB2B9"
+                                      , command=lambda: self.file_download_window())
+        self.download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
     def is_name_free(self):
         if not self.user.is_connected:

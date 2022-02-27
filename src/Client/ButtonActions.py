@@ -7,16 +7,16 @@ class ButtonsActions:
         self.display_chat.user.disconnect()
         self.display_chat.window.destroy()
 
-    def handle_file_download(self, file_name, file_window):
+    def handle_file_download(self, file_name, file_window, btn_to_destory, btn_to_create):
         self.file_name = file_name
         if len(file_name) > 0:
             if self.display_chat.user.download_file(file_name):
                 file_window.destroy()
-                self.display_chat.pop_proceed_window()
+                self.display_chat.swap_buttons(btn_to_destory, btn_to_create)
 
-    def proceed_download(self, proceed_window):
+    def proceed_download(self, btn_to_destroy):
         self.display_chat.user.download_file(self.file_name)
-        proceed_window.destroy()
+        self.display_chat.recreate_download_btn(btn_to_destroy)
 
     def exit_window(self, window):
         window.destroy()
