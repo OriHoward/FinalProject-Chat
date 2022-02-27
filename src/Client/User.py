@@ -1,8 +1,7 @@
+import pickle
+import socket
 import time
 
-import select
-import socket
-import pickle
 from Actions import Actions
 from SocketHandler import SocketHandler
 
@@ -26,6 +25,8 @@ class User:
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.udp_socket = None
         self.is_connected = False
+        self.received_half_file = False
+        self.packets_received = {}
 
     def set_username(self, username):
         self.user_name = username
@@ -113,38 +114,38 @@ class User:
             return
         self.get_packets(file_name)
         self.close_udp_connection(self.udp_socket)
+        return True
 
     def get_packets(self, file_name):
-        packets_received: dict = {}
         arrived = 0
-        expected_seq = 0
         num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
         print(f"number of expected packets received from server: {num_of_pkts}")
-        # self.udp_socket.settimeout(0.00005)
-        while len(packets_received) < int(num_of_pkts):
+        while arrived < int(num_of_pkts):
             try:
                 curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
                 curr_pkt = pickle.loads(curr_pkt)
                 seq_num = curr_pkt[0]
                 data_chunk = curr_pkt[1]
                 self.udp_socket.sendto(f"{seq_num}".encode(), self.udp_address)
-                if packets_received.get(seq_num) is None:
-                    packets_received[seq_num] = data_chunk
+                if self.packets_received.get(seq_num) is None:
+                    self.packets_received[seq_num] = data_chunk
                     arrived += 1
                     print(f"packet number {seq_num} received, sending ACK...", )
-
-
             except Exception as e:
                 print(e)
 
         print("RECEIVED ALL PACKETS SUCCESSFULLY")
-        self.write_files(packets_received, file_name)
+        if not self.received_half_file:
+            self.received_half_file = True
+            return
+        self.write_files(self.packets_received, file_name)
+        self.received_half_file = False
 
     def write_files(self, packets_received, file_name: str):
         file_name = file_name.split('.')
         file_name = f"{file_name[0]}_copy.{file_name[1]}"
         f = open(file_name, "wb")
-        for key, value in sorted(packets_received.items()):
+        for _, value in sorted(packets_received.items()):
             f.write(value)
 
     def close_udp_connection(self, udp_socket):

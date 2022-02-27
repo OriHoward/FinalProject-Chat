@@ -5,6 +5,7 @@ class Client:
         self.address = addr
         self.is_connected = True
         self.new_msgs = []
+        self.received_half_file = False
 
     def __repr__(self):
         return f"user_name:{self.user_name}"
@@ -16,3 +17,6 @@ class Client:
     def get_new_msg(self):
         if self.new_msgs:
             return self.new_msgs.pop(0)
+
+    def set_received_half_file(self, boolean):
+        self.received_half_file = boolean

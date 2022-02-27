@@ -78,3 +78,6 @@ class HandleClients:
             return True
         else:
             return False
+
+    def send_message(self, msg, client_socket):
+        SocketHandler.send_msg(msg, client_socket)

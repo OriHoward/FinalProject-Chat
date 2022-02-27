@@ -33,12 +33,9 @@ class ChatGUI:
         self.user = user
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
                           command=lambda: self.validation(self.entry_name.get(), self.entry_address.get()))
-        # self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
-        #                   command=lambda: self.enter_main_window(self.entry_name.get(), self.entry_address.get()))
         self.btn.place(relx=0.45, rely=0.58)
         self.name = None
         self.text_cons = None
-        # self.new_user: User = None
         self.msg = None
 
         self.window.mainloop()
@@ -52,7 +49,6 @@ class ChatGUI:
         self.user.set_username(name)
         self.user.connect()
         if not self.is_name_free():
-            # self.user.disconnect()
             self.user.is_connected = False
             self.taken_name_msg()
             return
@@ -118,9 +114,7 @@ class ChatGUI:
         drop = OptionMenu(self.window, clicked, "hello")
         drop.configure(bg="#ABB2B9", fg="#EAECEE", font="Helvetica 10 bold", width=10)
         drop.pack()
-
         drop.place(relx=0.78, rely=0.94, relheight=0.05, relwidth=0.15)
-        # todo add to send button option with clicked.get() to know which one was chosen
 
     def add_scrollbar(self):
         scrollbar = Scrollbar()
@@ -143,8 +137,6 @@ class ChatGUI:
     def is_available(self):
         if SocketHandler.get_enum(self.user.server) == Actions.TRUE.value:
             return True
-        # self.user.disconnect()
-        # self.taken_name_msg()
         return False
 
     def taken_name_msg(self):
@@ -159,11 +151,24 @@ class ChatGUI:
         entry_file_name = Entry(file_window, font="Helvetica 14")
         entry_file_name.place(relwidth=0.5, relheight=0.15, relx=0.27, rely=0.3)
         download_btn = Button(file_window, text="Download", font="Helvetica 14 bold",
-                              command=lambda: self.button_action.handle_file_download(entry_file_name.get(), file_window))
+                              command=lambda: self.button_action.handle_file_download(entry_file_name.get(),
+                                                                                      file_window))
         download_btn.place(relx=0.40, rely=0.58)
-        #self.button_action.handle_file_download(entry_file_name.get(), file_window)
         file_window.title("Choose your file")
         file_window.configure(width=500, height=150)
+
+    def pop_proceed_window(self):
+        proceed_window = Toplevel(self.window)
+        message = Label(proceed_window, text="do you wish to proceed downloading the file?",
+                        font="Helvetica 14 bold")
+        message.place(relheight=0.1, relx=0.24, rely=0.07)
+        proceed_btn = Button(proceed_window, text="proceed", font="Helvetica 14 bold",
+                             command=lambda: self.button_action.proceed_download(proceed_window))
+        proceed_btn.place(relx=0.70, rely=0.58)
+        exit_btn = Button(proceed_window, text="Download later", font="Helvetica 14 bold",
+                          command=lambda: self.button_action.exit_window(proceed_window))
+        exit_btn.place(relx=0.2, rely=0.58)
+        proceed_window.configure(width=600, height=250)
 
     def is_name_free(self):
         if not self.user.is_connected:
