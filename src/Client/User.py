@@ -1,3 +1,4 @@
+import os.path
 import pickle
 import socket
 import time
@@ -114,13 +115,13 @@ class User:
             return
         self.get_packets(file_name)
         self.close_udp_connection(self.udp_socket)
-        print(self.received_half_file)
         return True
 
     def get_packets(self, file_name):
         arrived = 0
         num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
         print(f"number of expected packets received from server: {num_of_pkts}")
+        self.udp_socket.settimeout(0.02)
         while arrived < int(num_of_pkts):
             try:
                 curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
@@ -145,9 +146,12 @@ class User:
     def write_files(self, packets_received, file_name: str):
         file_name = file_name.split('.')
         file_name = f"{file_name[0]}_copy.{file_name[1]}"
-        f = open(file_name, "wb")
+        save_path = 'MyFiles'
+        save_in = os.path.join(save_path,file_name)
+        f = open(save_in, "wb")
         for _, value in sorted(packets_received.items()):
             f.write(value)
+        f.close()
         self.packets_received.clear()
 
     def close_udp_connection(self, udp_socket):

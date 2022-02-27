@@ -1,6 +1,7 @@
 import pickle
 import socket
 import threading
+import time
 
 from Actions import Actions
 from Client import Client
@@ -136,7 +137,7 @@ class Server:
             self.window_size = list(range(0, num_of_packets))
         else:
             self.window_size = [0, 1, 2, 3]
-        packets_received = 0
+        packets_received = 1
         self.udp_socket.sendto(str(num_of_packets).encode(), addr)
         for pkt in self.window_size:
             self.udp_socket.sendto(packets[pkt], addr)
@@ -149,7 +150,7 @@ class Server:
                 next_packet = self.window_size[-1] + 1
                 if next_packet < len(packets):
                     self.udp_socket.sendto(packets[next_packet], addr)
-                    self.window_size.remove(ack)
+                    self.window_size.remove(self.window_size[0])
                     print(f"removed ack number: {self.window_size}")
                     self.window_size.append(next_packet)
                     print(f"appended next packet : {self.window_size}")
