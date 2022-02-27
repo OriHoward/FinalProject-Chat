@@ -74,6 +74,7 @@ class Server:
                 thread.start()
 
     def handle_client_udp(self, client: Client):
+        start_time = time.time()
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_socket.bind(ADDR_UDP)
         data, addr = self.udp_socket.recvfrom(MSG_SIZE)
@@ -101,6 +102,7 @@ class Server:
                 self.handler.send_message("--------downloaded 50% of the file--------", client.client_socket)
                 self.handler.send_message("--------click proceed to download second half--------", client.client_socket)
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
+                print(f"TOTAL TIME: {time.time() - start_time}")
                 self.udp_socket.close()
             else:
                 client.set_received_half_file(False)
@@ -118,7 +120,7 @@ class Server:
     def create_packets_list(self, file_path):
         packets = []
         sequence_num = 0
-        slice_to_read = 5000
+        slice_to_read = 60000
         with open(file_path, 'rb', 0) as f:
             while True:
                 data = f.read(slice_to_read)
@@ -131,21 +133,27 @@ class Server:
                     sequence_num += 1
         return packets
 
-    def send_packets(self, packets: list, addr, to_deduct, is_second_part):
+    def send_packets(self, packets: list, addr, num, is_second_part):
         num_of_packets = len(packets)
+        done = False
         if num_of_packets < 4:
             self.window_size = list(range(0, num_of_packets))
         else:
             self.window_size = [0, 1, 2, 3]
-        packets_received = 1
         self.udp_socket.sendto(str(num_of_packets).encode(), addr)
-        for pkt in self.window_size:
-            self.udp_socket.sendto(packets[pkt], addr)
-        while packets_received < num_of_packets:
-            expected_ack = self.window_size[0]
+        self.send_window(packets, addr)
+        while not done:
+            if is_second_part:
+                expected_ack = self.window_size[0] + num
+            else:
+                expected_ack = self.window_size[0]
             ack = int(self.udp_socket.recvfrom(MSG_SIZE)[0].decode())
-            packets_received += 1
-            if ack == expected_ack:
+            if ack == -10:
+                done = True
+            elif ack == -1:
+                print("resending packets")
+                self.send_window(packets, addr)
+            elif ack == expected_ack:
                 print(f"ack received successfully: {ack}")
                 next_packet = self.window_size[-1] + 1
                 if next_packet < len(packets):
@@ -156,7 +164,7 @@ class Server:
                     print(f"appended next packet : {self.window_size}")
             else:
                 if is_second_part:
-                    ack_to_cut = self.window_size.index(ack - to_deduct)
+                    ack_to_cut = self.window_size.index(ack - num)
                 else:
                     ack_to_cut = self.window_size.index(ack)
                 print(f"ack received: {ack}")
@@ -174,6 +182,10 @@ class Server:
                     print(f"new window : {self.window_size}")
                 else:
                     self.window_size = self.window_size[:ack_to_cut].append(self.window_size[-1] + 1)
+
+    def send_window(self, packets: list, addr):
+        for pkt in self.window_size:
+            self.udp_socket.sendto(packets[pkt], addr)
 
     def resend_packets(self, packets: list, resend: list, addr):
         for pkt in resend:

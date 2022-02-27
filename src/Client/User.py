@@ -10,7 +10,7 @@ FORMAT = 'utf-8'
 GATEWAY_PORT_TCP = 50000
 GATEWAY_PORT_UDP = 60000
 PREFIX = '/'
-MSG_SIZE = 55000
+MSG_SIZE = 64000
 DEFAULT_IP = socket.gethostbyname(socket.gethostname())
 
 
@@ -119,23 +119,33 @@ class User:
 
     def get_packets(self, file_name):
         arrived = 0
+        next_expected_seq = 1
         num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
         print(f"number of expected packets received from server: {num_of_pkts}")
-        self.udp_socket.settimeout(0.02)
+        max_time_out = 0
         while arrived < int(num_of_pkts):
+            start_time = time.time()
             try:
                 curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
+                if time.time() - start_time > 0.02:
+                    max_time_out += 1
+                    print(f"max: {max_time_out}")
+                    if max_time_out == 3:
+                        self.udp_socket.sendto("-1".encode(), self.udp_address)
+                        continue
+                max_time_out = 0
                 curr_pkt = pickle.loads(curr_pkt)
                 seq_num = curr_pkt[0]
                 data_chunk = curr_pkt[1]
                 self.udp_socket.sendto(f"{seq_num}".encode(), self.udp_address)
+                next_expected_seq += 1
                 if self.packets_received.get(seq_num) is None:
                     self.packets_received[seq_num] = data_chunk
                     arrived += 1
                     print(f"packet number {seq_num} received, sending ACK...", )
             except Exception as e:
                 print(e)
-
+        self.udp_socket.sendto(f"-10".encode(), self.udp_address)
         print("RECEIVED ALL PACKETS SUCCESSFULLY")
         if not self.received_half_file:
             self.received_half_file = True
@@ -147,7 +157,7 @@ class User:
         file_name = file_name.split('.')
         file_name = f"{file_name[0]}_copy.{file_name[1]}"
         save_path = 'MyFiles'
-        save_in = os.path.join(save_path,file_name)
+        save_in = os.path.join(save_path, file_name)
         f = open(save_in, "wb")
         for _, value in sorted(packets_received.items()):
             f.write(value)
