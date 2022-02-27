@@ -153,7 +153,7 @@ class ChatGUI:
         entry_file_name = Entry(file_window, font="Helvetica 14")
         entry_file_name.place(relwidth=0.5, relheight=0.15, relx=0.27, rely=0.3)
         button_to_create = Button(self.window, text="Proceed", font="Helvetica 14 bold", bg="#ABB2B9",
-                                  command=lambda: self.button_action.proceed_download(button_to_create))
+                                  command=lambda: self.button_action.proceed_download())
         download_btn = Button(file_window, text="Download", font="Helvetica 14 bold",
                               command=lambda: self.button_action.handle_file_download(entry_file_name.get(),
                                                                                       file_window,
@@ -167,7 +167,7 @@ class ChatGUI:
         button_to_destroy.destroy()
         button_to_create.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
-    def recreate_download_btn(self, button_to_destroy):
+    def recreate_download_btn(self):
         self.download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20,
                                       bg="#ABB2B9"
                                       , command=lambda: self.file_download_window())

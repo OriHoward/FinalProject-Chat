@@ -14,12 +14,9 @@ class ButtonsActions:
                 file_window.destroy()
                 self.display_chat.swap_buttons(btn_to_destory, btn_to_create)
 
-    def proceed_download(self, btn_to_destroy):
+    def proceed_download(self):
         self.display_chat.user.download_file(self.file_name)
-        self.display_chat.recreate_download_btn(btn_to_destroy)
-
-    def exit_window(self, window):
-        window.destroy()
+        self.display_chat.recreate_download_btn()
 
     def handle_udp_connection(self):
         self.display_chat.user.open_udp_connection()
