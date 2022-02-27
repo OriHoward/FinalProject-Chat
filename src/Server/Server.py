@@ -1,4 +1,3 @@
-import os
 import pickle
 import socket
 import threading
@@ -113,7 +112,7 @@ class Server:
 
     def get_last_file_bytes(self, file_path):
         with open(file_path, 'rb') as f:
-            return f.read()[-1:]
+            return int.from_bytes(f.read()[-1:], byteorder='little', signed=True)
 
     def create_packets_list(self, file_path):
         packets = []
