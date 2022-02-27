@@ -101,6 +101,7 @@ class Server:
                 self.handler.send_message("--------downloaded 50% of the file--------", client.client_socket)
                 self.handler.send_message("--------click proceed to download second half--------", client.client_socket)
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
+                self.udp_socket.close()
             else:
                 client.set_received_half_file(False)
                 self.handler.send_message("--------proceeding to download file--------", client.client_socket)
@@ -108,8 +109,9 @@ class Server:
                 last_byte = self.get_last_file_bytes(file_path)
                 self.handler.send_message("--------FINISHED--------", client.client_socket)
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
+                self.udp_socket.close()
 
-            self.udp_socket.close()
+
 
     def get_last_file_bytes(self, file_path):
         with open(file_path, 'rb') as f:
