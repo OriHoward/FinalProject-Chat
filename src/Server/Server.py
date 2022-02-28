@@ -1,3 +1,4 @@
+import os.path
 import pickle
 import socket
 import threading
@@ -98,29 +99,37 @@ class Server:
                 client.set_received_half_file(True)
                 self.handler.send_message("--------downloading file--------", client.client_socket)
                 self.send_packets(first_half_packets, addr, int(cut_list_index), False)
-                last_byte = self.get_last_file_bytes(file_path)
+                last_byte = self.get_last_file_bytes(file_path, False)
                 self.handler.send_message("--------downloaded 50% of the file--------", client.client_socket)
                 self.handler.send_message("--------click proceed to download second half--------", client.client_socket)
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
-                print(f"TOTAL TIME: {time.time() - start_time}")
+                print(f"finished downloading first half of file. TOTAL TIME: {time.time() - start_time}")
                 self.udp_socket.close()
             else:
                 client.set_received_half_file(False)
                 self.handler.send_message("--------proceeding to download file--------", client.client_socket)
                 self.send_packets(second_half_packets, addr, int(cut_list_index), True)
-                last_byte = self.get_last_file_bytes(file_path)
+                last_byte = self.get_last_file_bytes(file_path, True)
                 self.handler.send_message("--------FINISHED--------", client.client_socket)
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
+                print(f"finished downloading the file. TOTAL TIME: {time.time() - start_time}")
                 self.udp_socket.close()
 
-    def get_last_file_bytes(self, file_path):
-        with open(file_path, 'rb') as f:
+    def get_last_file_bytes(self, file_path, is_second_part):
+        f = open(file_path, 'rb')
+        file_size = os.path.getsize(file_path)
+        if is_second_part:
             return int.from_bytes(f.read()[-1:], byteorder='little', signed=True)
+        else:
+            return int.from_bytes(f.read()[int(file_size / 2):int(file_size / 2) + 1], byteorder='little', signed=True)
 
     def create_packets_list(self, file_path):
         packets = []
         sequence_num = 0
-        slice_to_read = 60000
+        file_size = os.path.getsize(file_path)
+        slice_to_read = 10000
+        if file_size < slice_to_read:
+            slice_to_read = int(file_size / 5)
         with open(file_path, 'rb', 0) as f:
             while True:
                 data = f.read(slice_to_read)
@@ -159,9 +168,9 @@ class Server:
                 if next_packet < len(packets):
                     self.udp_socket.sendto(packets[next_packet], addr)
                     self.window_size.remove(self.window_size[0])
-                    print(f"removed ack number: {self.window_size}")
+                    print("sliding window..")
+                    print(f"appending next packet : {self.window_size}")
                     self.window_size.append(next_packet)
-                    print(f"appended next packet : {self.window_size}")
             else:
                 if is_second_part:
                     ack_to_cut = self.window_size.index(ack - num)

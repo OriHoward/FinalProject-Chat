@@ -17,8 +17,6 @@ DEFAULT_IP = socket.gethostbyname(socket.gethostname())
 class User:
     def __init__(self, user_name: str = None, ip: str = DEFAULT_IP):
         self.user_name = user_name
-        if ip == "localhost":
-            self.ip = DEFAULT_IP
         self.ip = ip
         # self.ip = socket.gethostbyname(socket.gethostname())
         self.address = (self.ip, GATEWAY_PORT_TCP)
@@ -33,7 +31,11 @@ class User:
         self.user_name = username
 
     def set_address(self, ip):
-        self.ip = ip
+        if ip == "localhost":
+            self.ip = "127.0.0.1"
+        else:
+            self.ip = ip
+        self.address = (self.ip, GATEWAY_PORT_TCP)
 
     def connect(self):
         try:
@@ -104,6 +106,8 @@ class User:
 
     def download_file(self, file_name):
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_socket.bind(('', 0))
+        print(self.udp_socket.getsockname())
         SocketHandler.send_enum(Actions.OPEN_UDP.value, self.server)
         if self.check_reliablity():
             self.udp_socket.sendto(file_name.encode(), self.udp_address)
