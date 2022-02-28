@@ -18,48 +18,87 @@ class User:
     def __init__(self, user_name: str = None, ip: str = DEFAULT_IP):
         self.user_name = user_name
         self.ip = ip
-        # self.ip = socket.gethostbyname(socket.gethostname())
-        self.address = (self.ip, GATEWAY_PORT_TCP)
+        self.tcp_address = (self.ip, GATEWAY_PORT_TCP)
         self.udp_address = (self.ip, GATEWAY_PORT_UDP)
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.udp_socket = None
         self.is_connected = False
         self.received_half_file = False
         self.packets_received = {}
 
+    """
+        set the username for the client.
+    """
+
     def set_username(self, username):
         self.user_name = username
 
+    """
+        set the address of the server the client connects to.
+    """
+
     def set_address(self, ip):
-        if ip == "localhost":
-            self.ip = "127.0.0.1"
+        if ip == "localhost" or len(ip) == 0 or ip == "127.0.0.1":
+            self.ip = DEFAULT_IP
         else:
             self.ip = ip
-        self.address = (self.ip, GATEWAY_PORT_TCP)
+        self.tcp_address = (self.ip, GATEWAY_PORT_TCP)
+
+    """
+        connects the client with the server
+        sends the username for the serve to approve it's free 
+    """
 
     def connect(self):
         try:
             # self.bind_port()
-            self.server.connect(self.address)
-            SocketHandler.send_msg(self.user_name, self.server)
-            print(self.server.getsockname())
-            self.is_connected = True
+            if not self.is_connected:
+                # self.server.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+                # self.server.bind(('',0))
+                self.tcp_socket.connect(self.tcp_address)
+                SocketHandler.send_msg(self.user_name, self.tcp_socket)
+                print(self.tcp_socket.getsockname())
+                self.is_connected = True
         except Exception as e:
             print(e)
             print("No connection")
 
+    """
+        this function sends enum to server to disconnect
+    """
+
     def disconnect(self):
-        SocketHandler.send_enum(Actions.DISCONNECT.value, self.server)
+        SocketHandler.send_enum(Actions.DISCONNECT.value, self.tcp_socket)
         self.is_connected = False
+        self.tcp_socket.close()
+
+    """
+        closing the socket
+    """
+
+    def close_socket(self):
+        self.tcp_socket.close()
+
+    """
+        sends enum to server to get users list
+    """
 
     def get_users(self):
-        SocketHandler.send_enum(Actions.USER_LIST.value, self.server)
+        SocketHandler.send_enum(Actions.USER_LIST.value, self.tcp_socket)
+
+    """
+        sends private message to a client through server
+    """
 
     def send_private_msg(self, msg, user_name):
         msg = " ".join(msg)
-        SocketHandler.send_enum(Actions.PRIVATE_MSG.value, self.server)
-        SocketHandler.send_msg(user_name, self.server)
-        SocketHandler.send_msg(msg, self.server)
+        SocketHandler.send_enum(Actions.PRIVATE_MSG.value, self.tcp_socket)
+        SocketHandler.send_msg(user_name, self.tcp_socket)
+        SocketHandler.send_msg(msg, self.tcp_socket)
+
+    """
+        taking care of commands received from the client
+    """
 
     def action_received(self, msg: str):
         msg = msg.split(" ")
@@ -76,14 +115,30 @@ class User:
             case "commands":
                 self.get_commands()
 
+    """
+        sends message to all clients in the chat
+    """
+
     def send_msg_to_all(self):
-        SocketHandler.send_enum(Actions.MESSAGE_ALL.value, self.server)
+        SocketHandler.send_enum(Actions.MESSAGE_ALL.value, self.tcp_socket)
+
+    """
+        sends enum to server to get the file list
+    """
 
     def get_file_list(self):
-        SocketHandler.send_enum(Actions.FILE_LIST.value, self.server)
+        SocketHandler.send_enum(Actions.FILE_LIST.value, self.tcp_socket)
+
+    """
+        sends enum to server to get commands list
+    """
 
     def get_commands(self):
-        SocketHandler.send_enum(Actions.COMMANDS.value, self.server)
+        SocketHandler.send_enum(Actions.COMMANDS.value, self.tcp_socket)
+
+    """
+        this function is to find a free port for the client in a specific range
+    """
 
     def bind_port(self):
         taken_ports = 0
@@ -91,10 +146,9 @@ class User:
         is_found = False
         while not is_found:
             try:
-                self.server.bind(('', curr_port))
+                self.tcp_socket.bind(('', curr_port))
                 is_found = True
-            except Exception as e:
-                print(e)
+            except:
                 curr_port += 1
                 taken_ports += 1
 
@@ -103,12 +157,16 @@ class User:
                 exit(1)
         self.reuse_socket = True
         return
-
+    """
+        this function opens a UDP socket to get a file from the server
+        we use "three way hand shake" method to make sure the server is listening
+        and only then transferring the file
+    """
     def download_file(self, file_name):
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_socket.bind(('', 0))
         print(self.udp_socket.getsockname())
-        SocketHandler.send_enum(Actions.OPEN_UDP.value, self.server)
+        SocketHandler.send_enum(Actions.OPEN_UDP.value, self.tcp_socket)
         if self.check_reliablity():
             self.udp_socket.sendto(file_name.encode(), self.udp_address)
             if self.udp_socket.recvfrom(MSG_SIZE)[0].decode() == "w":
@@ -121,6 +179,10 @@ class User:
         self.close_udp_connection(self.udp_socket)
         return True
 
+    """
+        this function receiving all the packets from the server that are associated with the file
+        if a packet is not received the server sends it again, and we also have a time out.
+    """
     def get_packets(self, file_name):
         arrived = 0
         next_expected_seq = 1
@@ -157,6 +219,9 @@ class User:
         self.write_files(self.packets_received, file_name)
         self.received_half_file = False
 
+    """
+        this function writes the file in the correct order with all the packets we have received
+    """
     def write_files(self, packets_received, file_name: str):
         file_name = file_name.split('.')
         file_name = f"{file_name[0]}_copy.{file_name[1]}"
@@ -168,9 +233,15 @@ class User:
         f.close()
         self.packets_received.clear()
 
+    """
+        closes the UDP connection
+    """
     def close_udp_connection(self, udp_socket):
         udp_socket.close()
-
+    """
+        we use 'three way hand shake' method to make sure the server is listening
+        this function makes sure the udp is a little bit more reliable
+    """
     def check_reliablity(self):
         time.sleep(0.25)
         self.udp_socket.sendto("ACK".encode(), self.udp_address)

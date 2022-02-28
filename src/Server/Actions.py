@@ -1,5 +1,7 @@
 import enum
-
+"""
+    Enum class for communicating with the client
+"""
 
 class Actions(enum.Enum):
     USER_LIST = b'U'

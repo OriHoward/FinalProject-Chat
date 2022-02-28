@@ -22,7 +22,7 @@ class HandleThreads:
     def receive(self):
         while self.display_chat.user.is_connected:
             try:
-                message = SocketHandler.get_msg(self.display_chat.user.server)
+                message = SocketHandler.get_msg(self.display_chat.user.tcp_socket)
                 self.display_chat.update_chat_display(message)
             except:
                 print("An error occurred in receive thread")
@@ -37,4 +37,4 @@ class HandleThreads:
             else:
                 self.display_chat.user.send_msg_to_all()
                 message = f"{self.display_chat.name}: {msg}"
-                SocketHandler.send_msg(message, self.display_chat.user.server)
+                SocketHandler.send_msg(message, self.display_chat.user.tcp_socket)

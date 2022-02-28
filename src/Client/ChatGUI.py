@@ -45,13 +45,16 @@ class ChatGUI:
         if not self.is_valid(name):
             self.error_msg()
             return
-        if len(address) > 0:
-            self.user.set_address(address)
+        self.user.set_address(address)
         self.user.set_username(name)
         self.user.connect()
+        if not self.is_connected():
+            self.connect_error_msg()
+            return
         if not self.is_name_free():
             self.user.is_connected = False
             self.taken_name_msg()
+            self.user.close_socket()
             return
 
         self.enter_main_window(name)
@@ -127,16 +130,16 @@ class ChatGUI:
             quit()
 
     def error_msg(self):
-        error = Label(self.login, text="please enter a valid one word name", font="Helvetica 12")
+        error = Label(self.login, text="---please enter a valid one word name---", font="Helvetica 12")
         error.place(relheight=0.1, relx=0.33, rely=0.7)
 
     def is_available(self):
-        if SocketHandler.get_enum(self.user.server) == Actions.TRUE.value:
+        if SocketHandler.get_enum(self.user.tcp_socket) == Actions.TRUE.value:
             return True
         return False
 
     def taken_name_msg(self):
-        error = Label(self.login, text="Name is taken, please try a different name", font="Helvetica 12")
+        error = Label(self.login, text="---Name is taken, please try a different name---", font="Helvetica 12")
         error.place(relheight=0.1, relx=0.33, rely=0.7)
 
     def file_download_window(self):
@@ -167,12 +170,19 @@ class ChatGUI:
                                       , command=lambda: self.file_download_window())
         self.download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
-    def is_name_free(self):
+    def is_connected(self):
         if not self.user.is_connected:
             return False
+        return True
+
+    def is_name_free(self):
         if not self.is_available():
             return False
         return True
+
+    def connect_error_msg(self):
+        error = Label(self.login, text="----------couldn't connect to server----------", font="Helvetica 12")
+        error.place(relheight=0.1, relx=0.37, rely=0.7)
 
     def is_valid(self, name):
         return len(name) > 1 and not " " in name and name.isalpha() \
