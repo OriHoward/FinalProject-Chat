@@ -20,7 +20,7 @@ class HandleThreads:
         thread.start()
 
     def receive(self):
-        while self.display_chat.user.is_connected:
+        while self.display_chat.user.connected:
             try:
                 message = SocketHandler.get_msg(self.display_chat.user.tcp_socket)
                 self.display_chat.update_chat_display(message)

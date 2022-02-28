@@ -52,11 +52,10 @@ class ChatGUI:
             self.connect_error_msg()
             return
         if not self.is_name_free():
-            self.user.is_connected = False
+            self.user.connected = False
             self.taken_name_msg()
             self.user.close_socket()
             return
-
         self.enter_main_window(name)
 
     def enter_main_window(self, name):
@@ -76,7 +75,7 @@ class ChatGUI:
         self.add_scrollbar()
 
     def update_chat_display(self, message):
-        if self.user.is_connected:
+        if self.user.connected:
             self.text_cons.config(state=NORMAL)
             self.text_cons.insert(END, message + "\n")
             self.text_cons.config(state=DISABLED)
@@ -171,7 +170,7 @@ class ChatGUI:
         self.download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
 
     def is_connected(self):
-        if not self.user.is_connected:
+        if not self.user.connected:
             return False
         return True
 

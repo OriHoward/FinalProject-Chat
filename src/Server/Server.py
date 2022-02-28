@@ -26,6 +26,10 @@ class Server:
         self.window_size: list = []
         self.handler = HandleClients()
 
+    """
+        handle the client in a loop in each message taking care of
+    """
+
     def handle_client(self, conn, addr, curr_client: Client):
         print(f"[NEW CONNECTION] {addr} connected.")
         while curr_client.is_connected:
@@ -33,6 +37,10 @@ class Server:
             if action_msg:
                 self.handle_msg(action_msg, curr_client)
         conn.close()
+
+    """
+        starts listening.. opens thread for each client that the server accepts
+    """
 
     def start(self):
         print("[LISTENING] server is now listening..")
@@ -55,6 +63,10 @@ class Server:
 
             print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
+    """
+        handles each message from the client with case match
+    """
+
     def handle_msg(self, msg, client):
         match msg:
             case Actions.USER_LIST.value:
@@ -73,6 +85,10 @@ class Server:
             case Actions.OPEN_UDP.value:
                 thread = threading.Thread(target=self.handle_client_udp, args=(client,))
                 thread.start()
+
+    """
+        handle the UDP connection from the client for the file transfer
+    """
 
     def handle_client_udp(self, client: Client):
         start_time = time.time()
@@ -115,6 +131,10 @@ class Server:
                 print(f"finished downloading the file. TOTAL TIME: {time.time() - start_time}")
                 self.udp_socket.close()
 
+    """
+        return the last byte of a file
+    """
+
     def get_last_file_bytes(self, file_path, is_second_part):
         f = open(file_path, 'rb')
         file_size = os.path.getsize(file_path)
@@ -122,6 +142,11 @@ class Server:
             return int.from_bytes(f.read()[-1:], byteorder='little', signed=True)
         else:
             return int.from_bytes(f.read()[int(file_size / 2):int(file_size / 2) + 1], byteorder='little', signed=True)
+
+    """
+        reading small data fragments of the file and creates packets from each data
+        chunk then adding all packets to list and returns it
+    """
 
     def create_packets_list(self, file_path):
         packets = []
@@ -141,6 +166,14 @@ class Server:
                     packets.append(pkt)
                     sequence_num += 1
         return packets
+
+    """
+        this function sending the packets to client with a method called:
+        'selective repeat'. we have a sliding window size which sends the packets.
+        for each ack the server receives we send another packet, the size of the window
+        is always the number of packets that are in flight. if a packet got lost or timed out,
+        we send the packet again.
+    """
 
     def send_packets(self, packets: list, addr, num, is_second_part):
         num_of_packets = len(packets)
@@ -191,16 +224,23 @@ class Server:
                     print(f"new window : {self.window_size}")
                 else:
                     self.window_size = self.window_size[:ack_to_cut].append(self.window_size[-1] + 1)
-
+    """
+        sends the whole window.
+    """
     def send_window(self, packets: list, addr):
         for pkt in self.window_size:
             self.udp_socket.sendto(packets[pkt], addr)
-
+    """
+        resending the packets who got lost
+    """
     def resend_packets(self, packets: list, resend: list, addr):
         for pkt in resend:
             if pkt < len(packets):
                 self.udp_socket.sendto(packets[pkt], addr)
-
+    """
+        checking reliability with the client with the 'three way handshake' method 
+        before transferring the file
+    """
     def check_reliablity(self, data, addr):
         if data.decode() == "ACK":
             self.udp_socket.sendto("SYN".encode(), addr)
