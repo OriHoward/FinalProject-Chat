@@ -69,7 +69,6 @@ class ChatGUI:
         self.window.configure(width=800, height=550, bg="#17202A")
         self.add_chat_window()
         self.add_buttons()
-        self.add_drop_down_menu()
         self.text_cons.config(cursor="arrow")
         self.add_scrollbar()
 
@@ -84,10 +83,13 @@ class ChatGUI:
         disconnect_btn = Button(self.window, text="Disconnect", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
                                 command=lambda: self.button_action.handle_disconnect())
         disconnect_btn.place(relx=0.78, rely=0.85, relheight=0.04, relwidth=0.15)
-        self.download_button = Button(self.window, text="Download file", font="Helvetica 10 bold", width=20,
+        self.download_button = Button(self.window, text="Download File", font="Helvetica 10 bold", width=20,
                                       bg="#ABB2B9"
                                       , command=lambda: self.file_download_window())
         self.download_button.place(relx=0.78, rely=0.89, relheight=0.04, relwidth=0.15)
+        show_commands_btn = Button(self.window, text="Show Commands", font="Helvetica 10 bold", width=20, bg="#ABB2B9",
+                                   command=lambda: self.button_action.handle_show_commands())
+        show_commands_btn.place(relx=0.78, rely=0.95, relheight=0.04, relwidth=0.15)
 
     def add_chat_window(self):
         name_label = Label(self.window, bg="#17202A", fg="#EAECEE", text=self.name, font="Helvetica 13 bold", pady=5)
@@ -109,14 +111,6 @@ class ChatGUI:
         self.text_cons.config(state=DISABLED)
         entry_msg.delete(0, END)
         self.thread.start_sender(msg)
-
-    def add_drop_down_menu(self):
-        clicked = StringVar()
-        clicked.set("Send to")
-        drop = OptionMenu(self.window, clicked, "hello")
-        drop.configure(bg="#ABB2B9", fg="#EAECEE", font="Helvetica 10 bold", width=10)
-        drop.pack()
-        drop.place(relx=0.78, rely=0.94, relheight=0.05, relwidth=0.15)
 
     def add_scrollbar(self):
         scrollbar = Scrollbar()

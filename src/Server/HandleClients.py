@@ -65,8 +65,9 @@ class HandleClients:
         SocketHandler.send_msg(msg, client.client_socket)
 
     def send_commands_list(self, client: Client):
-        msg = "SERVER: /users - get a list of all connected users\n" \
-              "-/disconnect - disconnect from chat\n" \
+        msg = "SERVER:\n" \
+              "/users - get a list of all connected users\n" \
+              "/disconnect - disconnect from chat\n" \
               "/files - get a list of all the files\n" \
               "/whisper <client name> <msg> - send a private message to another user"
         SocketHandler.send_msg(msg, client.client_socket)

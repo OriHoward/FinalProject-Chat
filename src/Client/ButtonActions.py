@@ -20,3 +20,6 @@ class ButtonsActions:
 
     def handle_udp_connection(self):
         self.display_chat.user.open_udp_connection()
+
+    def handle_show_commands(self):
+        self.display_chat.user.get_commands()
