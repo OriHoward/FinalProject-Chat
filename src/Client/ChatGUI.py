@@ -4,11 +4,11 @@ import ButtonActions
 import threads
 from Actions import Actions
 from SocketHandler import SocketHandler
-from User import User
+from Client import Client
 
 
 class ChatGUI:
-    def __init__(self, user: User):
+    def __init__(self, user: Client):
         self.window = Tk()
         self.window.withdraw()
         self.login = Toplevel()
@@ -56,6 +56,7 @@ class ChatGUI:
             self.taken_name_msg()
             self.user.close_socket()
             return
+        self.user.udp_address = (self.user.ip, int(SocketHandler.get_msg(self.user.tcp_socket)))
         self.enter_main_window(name)
 
     def enter_main_window(self, name):

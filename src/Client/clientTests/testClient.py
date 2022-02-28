@@ -4,16 +4,16 @@ import time
 from unittest import TestCase
 
 from SocketHandler import SocketHandler
-from User import User
+from Client import Client
 from clientTests.SetUp.FakeServer import FakeServer
 
 
-class TestUser(TestCase):
+class TestClient(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.server = FakeServer()
-        cls.first_user = User("Ori")
-        cls.second_user = User("Avi")
+        cls.first_user = Client("Ori")
+        cls.second_user = Client("Avi")
         cls.server_thread = multiprocessing.Process(target=cls.server.start, daemon=True)
         cls.server_thread.start()
 

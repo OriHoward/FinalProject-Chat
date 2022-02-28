@@ -1,3 +1,4 @@
+import functools
 import os.path
 import pickle
 import socket
@@ -18,11 +19,23 @@ ADDR_TCP = (IP, GATEWAY_PORT_TCP)
 ADDR_UDP = (IP, GATEWAY_PORT_UDP)
 
 
+def synchronized(wrapped):
+    lock = threading.Lock()
+
+    @functools.wraps(wrapped)
+    def _wrap(*args, **kwargs):
+        with lock:
+            result = wrapped(*args, **kwargs)
+            return result
+
+    return _wrap
+
+
 class Server:
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind(ADDR_TCP)
-        self.udp_socket = None
+        self.udp_ports = [False for _ in range(10)]
         self.window_size: list = []
         self.handler = HandleClients()
 
@@ -53,10 +66,12 @@ class Server:
             if not is_free:
                 conn.close()
                 continue
+            udp_port = self.get_udp_port()
+            self.handler.send_message(str(udp_port), conn)
             self.handler.send_all(f"SERVER: {curr_name} has joined the chat!")
             self.handler.send_message("SERVER: connection successful!", conn)
             self.handler.send_message("SERVER: type /commands for more options", conn)
-            new_client = Client(conn, curr_name, addr)
+            new_client = Client(conn, curr_name, addr, udp_port)
             self.handler.add_client(new_client)
             tcp_thread = threading.Thread(target=self.handle_client, args=(conn, addr, new_client), daemon=True)
             tcp_thread.start()
@@ -74,6 +89,7 @@ class Server:
             case Actions.PRIVATE_MSG.value:
                 self.handler.handle_private_msg(client)
             case Actions.DISCONNECT.value:
+                self.udp_ports[client.udp_port - 60000] = False
                 self.handler.disconnect(client)
             case Actions.MESSAGE_ALL.value:
                 msg_to_distribute = SocketHandler.get_msg(client.client_socket)
@@ -92,20 +108,20 @@ class Server:
 
     def handle_client_udp(self, client: Client):
         start_time = time.time()
-        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_socket.bind(ADDR_UDP)
-        data, addr = self.udp_socket.recvfrom(MSG_SIZE)
-        if not self.check_reliablity(data, addr):
-            self.udp_socket.close()
+        udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp_socket.bind((IP, client.udp_port))
+        data, addr = udp_socket.recvfrom(MSG_SIZE)
+        if not self.check_reliablity(data, addr, udp_socket):
+            udp_socket.close()
             return
-        file_name = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
+        file_name = udp_socket.recvfrom(MSG_SIZE)[0].decode()
         if not self.handler.check_file_name(file_name):
             self.handler.send_message("SERVER: file name not found, try again.", client.client_socket)
-            self.udp_socket.sendto("w".encode(), addr)
-            self.udp_socket.close()
+            udp_socket.sendto("w".encode(), addr)
+            udp_socket.close()
             return
         else:
-            self.udp_socket.sendto("g".encode(), addr)
+            udp_socket.sendto("g".encode(), addr)
             file_path = f'ServerFiles/{file_name}'
             packets = self.create_packets_list(file_path)
             cut_list_index = len(packets) / 2
@@ -114,22 +130,22 @@ class Server:
             if not client.received_half_file:
                 client.set_received_half_file(True)
                 self.handler.send_message("--------downloading file--------", client.client_socket)
-                self.send_packets(first_half_packets, addr, int(cut_list_index), False)
+                self.send_packets(first_half_packets, addr, int(cut_list_index), False, udp_socket)
                 last_byte = self.get_last_file_bytes(file_path, False)
                 self.handler.send_message("--------downloaded 50% of the file--------", client.client_socket)
                 self.handler.send_message("--------click proceed to download second half--------", client.client_socket)
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
                 print(f"finished downloading first half of file. TOTAL TIME: {time.time() - start_time}")
-                self.udp_socket.close()
+                udp_socket.close()
             else:
                 client.set_received_half_file(False)
                 self.handler.send_message("--------proceeding to download file--------", client.client_socket)
-                self.send_packets(second_half_packets, addr, int(cut_list_index), True)
+                self.send_packets(second_half_packets, addr, int(cut_list_index), True, udp_socket)
                 last_byte = self.get_last_file_bytes(file_path, True)
                 self.handler.send_message("--------FINISHED--------", client.client_socket)
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
                 print(f"finished downloading the file. TOTAL TIME: {time.time() - start_time}")
-                self.udp_socket.close()
+                udp_socket.close()
 
     """
         return the last byte of a file
@@ -175,31 +191,32 @@ class Server:
         we send the packet again.
     """
 
-    def send_packets(self, packets: list, addr, num, is_second_part):
+    def send_packets(self, packets: list, addr, num, is_second_part, conn):
+        time.sleep(0.7)
         num_of_packets = len(packets)
         done = False
         if num_of_packets < 4:
             self.window_size = list(range(0, num_of_packets))
         else:
             self.window_size = [0, 1, 2, 3]
-        self.udp_socket.sendto(str(num_of_packets).encode(), addr)
-        self.send_window(packets, addr)
+        self.send_to(str(num_of_packets).encode(), addr, conn)
+        self.send_window(packets, addr, conn)
         while not done:
             if is_second_part:
                 expected_ack = self.window_size[0] + num
             else:
                 expected_ack = self.window_size[0]
-            ack = int(self.udp_socket.recvfrom(MSG_SIZE)[0].decode())
+            ack = int(conn.recvfrom(MSG_SIZE)[0].decode())
             if ack == -10:
                 done = True
             elif ack == -1:
                 print("resending packets")
-                self.send_window(packets, addr)
+                self.send_window(packets, addr, conn)
             elif ack == expected_ack:
                 print(f"ack received successfully: {ack}")
                 next_packet = self.window_size[-1] + 1
                 if next_packet < len(packets):
-                    self.udp_socket.sendto(packets[next_packet], addr)
+                    self.send_to(packets[next_packet], addr, conn)
                     self.window_size.remove(self.window_size[0])
                     print("sliding window..")
                     print(f"appending next packet : {self.window_size}")
@@ -212,7 +229,7 @@ class Server:
                 print(f"ack received: {ack}")
                 resend = self.window_size[:ack_to_cut]
                 print(f"resending: {resend}")
-                self.resend_packets(packets, resend, addr)
+                self.resend_packets(packets, resend, addr, conn)
                 if ack_to_cut < len(self.window_size) - 1:
                     first_part = self.window_size[(ack_to_cut + 1):]
                     second_part = self.window_size[:ack_to_cut]
@@ -220,30 +237,47 @@ class Server:
                     self.window_size = first_part + second_part
                     if last_part < len(packets):
                         self.window_size.append(last_part)
-                        self.udp_socket.sendto(packets[last_part], addr)
+                        self.send_to(packets[last_part], addr, conn)
                     print(f"new window : {self.window_size}")
                 else:
                     self.window_size = self.window_size[:ack_to_cut].append(self.window_size[-1] + 1)
+
     """
         sends the whole window.
     """
-    def send_window(self, packets: list, addr):
+
+    def send_window(self, packets: list, addr, conn):
         for pkt in self.window_size:
-            self.udp_socket.sendto(packets[pkt], addr)
+            self.send_to(packets[pkt], addr, conn)
+
     """
         resending the packets who got lost
     """
-    def resend_packets(self, packets: list, resend: list, addr):
+
+    def resend_packets(self, packets: list, resend: list, addr, conn):
         for pkt in resend:
             if pkt < len(packets):
-                self.udp_socket.sendto(packets[pkt], addr)
+                self.send_to(packets[pkt], addr, conn)
+
     """
         checking reliability with the client with the 'three way handshake' method 
         before transferring the file
     """
-    def check_reliablity(self, data, addr):
+
+    def check_reliablity(self, data, addr, conn):
         if data.decode() == "ACK":
-            self.udp_socket.sendto("SYN".encode(), addr)
-            data, _ = self.udp_socket.recvfrom(MSG_SIZE)
+            conn.sendto("SYN".encode(), addr)
+            data, _ = conn.recvfrom(MSG_SIZE)
             return True
         return False
+
+    @synchronized
+    def send_to(self, msg, addr, conn):
+        conn.sendto(msg, addr)
+
+    def get_udp_port(self):
+        for port, unavailable in enumerate(self.udp_ports):
+            if not unavailable:
+                self.udp_ports[port] = True
+                return 60000 + port
+        return -1

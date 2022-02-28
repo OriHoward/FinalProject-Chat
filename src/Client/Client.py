@@ -14,13 +14,14 @@ MSG_SIZE = 64000
 DEFAULT_IP = socket.gethostbyname(socket.gethostname())
 
 
-class User:
+class Client:
     def __init__(self, user_name: str = None, ip: str = DEFAULT_IP):
         self.user_name = user_name
         self.ip = ip
         self.tcp_address = (self.ip, GATEWAY_PORT_TCP)
-        self.udp_address = (self.ip, GATEWAY_PORT_UDP)
-        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.udp_address = (self.ip, GATEWAY_PORT_UDP)
+        self.udp_address = None
+        self.tcp_socket = None
         self.udp_socket = None
         self.connected = False
         self.received_half_file = False
@@ -54,10 +55,9 @@ class User:
 
     def connect(self):
         try:
-            # self.bind_port()
+            self.bind_port()
+            self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             if not self.connected:
-                # self.server.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-                # self.server.bind(('',0))
                 self.tcp_socket.connect(self.tcp_address)
                 SocketHandler.send_msg(self.user_name, self.tcp_socket)
                 print(self.tcp_socket.getsockname())
@@ -73,7 +73,7 @@ class User:
     def disconnect(self):
         SocketHandler.send_enum(Actions.DISCONNECT.value, self.tcp_socket)
         self.connected = False
-        self.tcp_socket.close()
+        self.close_socket()
 
     """
         closing the socket
@@ -169,8 +169,6 @@ class User:
 
     def download_file(self, file_name):
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_socket.bind(('', 0))
-        print(self.udp_socket.getsockname())
         SocketHandler.send_enum(Actions.OPEN_UDP.value, self.tcp_socket)
         if self.check_reliablity():
             self.udp_socket.sendto(file_name.encode(), self.udp_address)
@@ -262,5 +260,3 @@ class User:
         else:
             self.udp_socket.close()
             return False
-
-
