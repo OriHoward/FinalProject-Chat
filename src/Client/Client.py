@@ -55,7 +55,7 @@ class Client:
 
     def connect(self):
         try:
-            self.bind_port()
+            # self.bind_port()
             self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             if not self.connected:
                 self.tcp_socket.connect(self.tcp_address)
@@ -73,7 +73,6 @@ class Client:
     def disconnect(self):
         SocketHandler.send_enum(Actions.DISCONNECT.value, self.tcp_socket)
         self.connected = False
-        self.close_socket()
 
     """
         closing the socket

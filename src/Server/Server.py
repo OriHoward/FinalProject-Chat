@@ -83,28 +83,28 @@ class Server:
     """
 
     def handle_msg(self, msg, client):
-        match msg:
-            case Actions.USER_LIST.value:
-                self.handler.send_user_list(client.client_socket)
-            case Actions.PRIVATE_MSG.value:
-                self.handler.handle_private_msg(client)
-            case Actions.DISCONNECT.value:
-                self.udp_ports[client.udp_port - 60000] = False
-                self.handler.disconnect(client)
-            case Actions.MESSAGE_ALL.value:
-                msg_to_distribute = SocketHandler.get_msg(client.client_socket)
-                self.handler.send_all(msg_to_distribute)
-            case Actions.FILE_LIST.value:
-                self.handler.send_file_list(client)
-            case Actions.COMMANDS.value:
-                self.handler.send_commands_list(client)
-            case Actions.OPEN_UDP.value:
-                thread = threading.Thread(target=self.handle_client_udp, args=(client,))
-                thread.start()
+        if msg == Actions.USER_LIST.value:
+            self.handler.send_user_list(client.client_socket)
+        elif msg == Actions.PRIVATE_MSG.value:
+            self.handler.handle_private_msg(client)
+        elif msg == Actions.DISCONNECT.value:
+            self.udp_ports[client.udp_port - 60000] = False
+            self.handler.disconnect(client)
+        elif msg == Actions.MESSAGE_ALL.value:
+            msg_to_distribute = SocketHandler.get_msg(client.client_socket)
+            self.handler.send_all(msg_to_distribute)
+        elif msg == Actions.FILE_LIST.value:
+            self.handler.send_file_list(client)
+        elif msg == Actions.COMMANDS.value:
+            self.handler.send_commands_list(client)
+        elif msg == Actions.OPEN_UDP.value:
+            thread = threading.Thread(target=self.handle_client_udp, args=(client,))
+            thread.start()
 
     """
         handle the UDP connection from the client for the file transfer
     """
+
 
     def handle_client_udp(self, client: Client):
         start_time = time.time()
@@ -147,9 +147,11 @@ class Server:
                 print(f"finished downloading the file. TOTAL TIME: {time.time() - start_time}")
                 udp_socket.close()
 
+
     """
         return the last byte of a file
     """
+
 
     def get_last_file_bytes(self, file_path, is_second_part):
         f = open(file_path, 'rb')
@@ -159,10 +161,12 @@ class Server:
         else:
             return int.from_bytes(f.read()[int(file_size / 2):int(file_size / 2) + 1], byteorder='little', signed=True)
 
+
     """
         reading small data fragments of the file and creates packets from each data
         chunk then adding all packets to list and returns it
     """
+
 
     def create_packets_list(self, file_path):
         packets = []
@@ -183,6 +187,7 @@ class Server:
                     sequence_num += 1
         return packets
 
+
     """
         this function sending the packets to client with a method called:
         'selective repeat'. we have a sliding window size which sends the packets.
@@ -190,6 +195,7 @@ class Server:
         is always the number of packets that are in flight. if a packet got lost or timed out,
         we send the packet again.
     """
+
 
     def send_packets(self, packets: list, addr, num, is_second_part, conn):
         time.sleep(0.7)
@@ -242,27 +248,33 @@ class Server:
                 else:
                     self.window_size = self.window_size[:ack_to_cut].append(self.window_size[-1] + 1)
 
+
     """
         sends the whole window.
     """
+
 
     def send_window(self, packets: list, addr, conn):
         for pkt in self.window_size:
             self.send_to(packets[pkt], addr, conn)
 
+
     """
         resending the packets who got lost
     """
+
 
     def resend_packets(self, packets: list, resend: list, addr, conn):
         for pkt in resend:
             if pkt < len(packets):
                 self.send_to(packets[pkt], addr, conn)
 
+
     """
         checking reliability with the client with the 'three way handshake' method 
         before transferring the file
     """
+
 
     def check_reliablity(self, data, addr, conn):
         if data.decode() == "ACK":
@@ -271,9 +283,11 @@ class Server:
             return True
         return False
 
+
     @synchronized
     def send_to(self, msg, addr, conn):
         conn.sendto(msg, addr)
+
 
     def get_udp_port(self):
         for port, unavailable in enumerate(self.udp_ports):
