@@ -94,7 +94,7 @@ class User:
     """
 
     def send_private_msg(self, msg, user_name):
-        msg = " ".join(msg)
+        msg = "".join(msg)
         SocketHandler.send_enum(Actions.PRIVATE_MSG.value, self.tcp_socket)
         SocketHandler.send_msg(user_name, self.tcp_socket)
         SocketHandler.send_msg(msg, self.tcp_socket)
@@ -262,3 +262,5 @@ class User:
         else:
             self.udp_socket.close()
             return False
+
+
