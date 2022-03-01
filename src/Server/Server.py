@@ -19,24 +19,12 @@ ADDR_TCP = (IP, GATEWAY_PORT_TCP)
 ADDR_UDP = (IP, GATEWAY_PORT_UDP)
 
 
-def synchronized(wrapped):
-    lock = threading.Lock()
-
-    @functools.wraps(wrapped)
-    def _wrap(*args, **kwargs):
-        with lock:
-            result = wrapped(*args, **kwargs)
-            return result
-
-    return _wrap
-
-
 class Server:
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind(ADDR_TCP)
         self.udp_ports = [False for _ in range(10)]
-        self.window_size: list = []
+        self.window: list = []
         self.handler = HandleClients()
 
     """
@@ -105,7 +93,6 @@ class Server:
         handle the UDP connection from the client for the file transfer
     """
 
-
     def handle_client_udp(self, client: Client):
         start_time = time.time()
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -130,7 +117,7 @@ class Server:
             if not client.received_half_file:
                 client.set_received_half_file(True)
                 self.handler.send_message("--------downloading file--------", client.client_socket)
-                self.send_packets(first_half_packets, addr, int(cut_list_index), False, udp_socket)
+                self.send_packets_selective_repeat(first_half_packets, addr, int(cut_list_index), False, udp_socket)
                 last_byte = self.get_last_file_bytes(file_path, False)
                 self.handler.send_message("--------downloaded 50% of the file--------", client.client_socket)
                 self.handler.send_message("--------click proceed to download second half--------", client.client_socket)
@@ -140,18 +127,16 @@ class Server:
             else:
                 client.set_received_half_file(False)
                 self.handler.send_message("--------proceeding to download file--------", client.client_socket)
-                self.send_packets(second_half_packets, addr, int(cut_list_index), True, udp_socket)
+                self.send_packets_selective_repeat(second_half_packets, addr, int(cut_list_index), True, udp_socket)
                 last_byte = self.get_last_file_bytes(file_path, True)
                 self.handler.send_message("--------FINISHED--------", client.client_socket)
                 self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
                 print(f"finished downloading the file. TOTAL TIME: {time.time() - start_time}")
                 udp_socket.close()
 
-
     """
         return the last byte of a file
     """
-
 
     def get_last_file_bytes(self, file_path, is_second_part):
         f = open(file_path, 'rb')
@@ -161,12 +146,10 @@ class Server:
         else:
             return int.from_bytes(f.read()[int(file_size / 2):int(file_size / 2) + 1], byteorder='little', signed=True)
 
-
     """
         reading small data fragments of the file and creates packets from each data
         chunk then adding all packets to list and returns it
     """
-
 
     def create_packets_list(self, file_path):
         packets = []
@@ -174,7 +157,7 @@ class Server:
         file_size = os.path.getsize(file_path)
         slice_to_read = 10000
         if file_size < slice_to_read:
-            slice_to_read = int(file_size / 5)
+            slice_to_read = int(file_size / 6)
         with open(file_path, 'rb', 0) as f:
             while True:
                 data = f.read(slice_to_read)
@@ -187,7 +170,6 @@ class Server:
                     sequence_num += 1
         return packets
 
-
     """
         this function sending the packets to client with a method called:
         'selective repeat'. we have a sliding window size which sends the packets.
@@ -196,85 +178,100 @@ class Server:
         we send the packet again.
     """
 
-
-    def send_packets(self, packets: list, addr, num, is_second_part, conn):
-        time.sleep(0.7)
+    def send_packets_selective_repeat(self, packets: list, addr, num, is_second_part, conn):
         num_of_packets = len(packets)
+        packets_to_append = 1
+        to_increase = 1
         done = False
-        if num_of_packets < 4:
-            self.window_size = list(range(0, num_of_packets))
-        else:
-            self.window_size = [0, 1, 2, 3]
-        self.send_to(str(num_of_packets).encode(), addr, conn)
+        self.window = [0, 1, 2, 3]
+        conn.sendto(str(num_of_packets).encode(), addr)
         self.send_window(packets, addr, conn)
         while not done:
             if is_second_part:
-                expected_ack = self.window_size[0] + num
+                expected_ack = self.window[0] + num
             else:
-                expected_ack = self.window_size[0]
+                expected_ack = self.window[0]
             ack = int(conn.recvfrom(MSG_SIZE)[0].decode())
             if ack == -10:
                 done = True
             elif ack == -1:
-                print("resending packets")
+                packets_to_append = 1
+                to_increase = 1
+                # print("resending  ALL packets and RESET window size")
                 self.send_window(packets, addr, conn)
             elif ack == expected_ack:
-                print(f"ack received successfully: {ack}")
-                next_packet = self.window_size[-1] + 1
+                packets_to_append += to_increase
+                to_increase += 1
+                # print(f"packets to append is up to: {packets_to_append}")
+                # print(f"the new increase is up to: {to_increase}")
+                # print(f"ack received successfully: {ack}")
+                next_packet = self.window[-1] + 1
                 if next_packet < len(packets):
-                    self.send_to(packets[next_packet], addr, conn)
-                    self.window_size.remove(self.window_size[0])
-                    print("sliding window..")
-                    print(f"appending next packet : {self.window_size}")
-                    self.window_size.append(next_packet)
+                    conn.sendto(packets[next_packet], addr)
+                    self.window.remove(self.window[0])
+                    # print("sliding window..")
+                    self.window.append(next_packet)
+                    # print(f"appending next packet : {self.window}")
+                self.append_packets(packets_to_append, packets, addr, conn)
             else:
+                packets_to_append -= to_increase
+                to_increase -= 1
+                # print(f"packets to append is down to: {packets_to_append}")
+                # print(f"new increase is down to: {to_increase}")
                 if is_second_part:
-                    ack_to_cut = self.window_size.index(ack - num)
+                    ack_to_cut = self.window.index(ack - num)
                 else:
-                    ack_to_cut = self.window_size.index(ack)
-                print(f"ack received: {ack}")
-                resend = self.window_size[:ack_to_cut]
-                print(f"resending: {resend}")
+                    ack_to_cut = self.window.index(ack)
+                # print(f"ack received: {ack}")
+                resend = self.window[:ack_to_cut]
+                # print(f"resending: {resend}")
                 self.resend_packets(packets, resend, addr, conn)
-                if ack_to_cut < len(self.window_size) - 1:
-                    first_part = self.window_size[(ack_to_cut + 1):]
-                    second_part = self.window_size[:ack_to_cut]
+                if ack_to_cut < len(self.window) - 1:
+                    first_part = self.window[(ack_to_cut + 1):]
+                    second_part = self.window[:ack_to_cut]
                     last_part = first_part[-1] + 1
-                    self.window_size = first_part + second_part
+                    self.window = first_part + second_part
                     if last_part < len(packets):
-                        self.window_size.append(last_part)
-                        self.send_to(packets[last_part], addr, conn)
-                    print(f"new window : {self.window_size}")
+                        self.window.append(last_part)
+                        conn.sendto(packets[last_part], addr)
+                    # print(f"new window : {self.window}")
                 else:
-                    self.window_size = self.window_size[:ack_to_cut].append(self.window_size[-1] + 1)
+                    self.window = self.window[:ack_to_cut].append(self.window[-1] + 1)
 
+    """
+        appending new packets according to the window size
+    """
+
+    def append_packets(self, packets_to_append, packets: list, addr, conn):
+        for i in range(packets_to_append):
+            next_packet = self.window[-1] + 1
+            if next_packet < len(packets):
+                conn.sendto(packets[next_packet], addr)
+                # print("adding packet to increase window..")
+                self.window.append(next_packet)
+                # print(f"window now is: {self.window}")
 
     """
         sends the whole window.
     """
 
-
     def send_window(self, packets: list, addr, conn):
-        for pkt in self.window_size:
-            self.send_to(packets[pkt], addr, conn)
-
+        for pkt in self.window:
+            conn.sendto(packets[pkt], addr)
 
     """
         resending the packets who got lost
     """
 
-
     def resend_packets(self, packets: list, resend: list, addr, conn):
         for pkt in resend:
             if pkt < len(packets):
-                self.send_to(packets[pkt], addr, conn)
-
+                conn.sendto(packets[pkt], addr)
 
     """
         checking reliability with the client with the 'three way handshake' method 
         before transferring the file
     """
-
 
     def check_reliablity(self, data, addr, conn):
         if data.decode() == "ACK":
@@ -282,12 +279,6 @@ class Server:
             data, _ = conn.recvfrom(MSG_SIZE)
             return True
         return False
-
-
-    @synchronized
-    def send_to(self, msg, addr, conn):
-        conn.sendto(msg, addr)
-
 
     def get_udp_port(self):
         for port, unavailable in enumerate(self.udp_ports):
