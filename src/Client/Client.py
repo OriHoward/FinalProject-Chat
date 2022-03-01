@@ -104,19 +104,17 @@ class Client:
 
     def action_received(self, msg: str):
         msg = msg.split(" ")
-        match msg[0][1:]:
-            case "users" | "getusers":
-                self.get_users()
-            case "disconnect" | "d":
-                self.disconnect()
-            case "files" | "getfiles":
-                self.get_file_list()
-            case "whisper" | "w":
-                if len(msg) > 2:
-                    self.send_private_msg(msg[2:], msg[1])
-            case "commands":
-                self.get_commands()
-
+        if msg[0][1:] == "users":
+            self.get_users()
+        elif msg[0][1:] == "disconnect":
+            self.disconnect()
+        elif msg[0][1:] == "files":
+            self.get_file_list()
+        elif msg[0][1:] == "whisper":
+            if len(msg) > 2:
+                self.send_private_msg(msg[2:], msg[1])
+        elif msg[0][1:] == "commands":
+            self.get_commands()
     """
         sends message to all clients in the chat
     """
