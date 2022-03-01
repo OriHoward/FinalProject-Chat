@@ -116,22 +116,28 @@ class Server:
             second_half_packets = packets[int(cut_list_index):]
             if not client.received_half_file:
                 client.set_received_half_file(True)
-                self.handler.send_message("--------downloading file--------", client.client_socket)
+                self.handler.send_message("---Opening UDP connection, RDT in action---", client.client_socket)
+                self.handler.send_message("---Downloading file---", client.client_socket)
                 self.send_packets_selective_repeat(first_half_packets, addr, int(cut_list_index), False, udp_socket)
                 last_byte = self.get_last_file_bytes(file_path, False)
-                self.handler.send_message("--------downloaded 50% of the file--------", client.client_socket)
-                self.handler.send_message("--------click proceed to download second half--------", client.client_socket)
-                self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
-                print(f"finished downloading first half of file. TOTAL TIME: {time.time() - start_time}")
+                self.handler.send_message("---Downloaded 50% of the file successfully---", client.client_socket)
+                self.handler.send_message("---Click proceed to download second half---", client.client_socket)
+                self.handler.send_message(f"---Last byte: {last_byte}---", client.client_socket)
+                total_time = format(time.time() - start_time, ".2f")
+                self.handler.send_message(f"---Finished downloading first half of file. TOTAL TIME: {total_time}---",
+                                          client.client_socket)
                 udp_socket.close()
             else:
                 client.set_received_half_file(False)
-                self.handler.send_message("--------proceeding to download file--------", client.client_socket)
+                self.handler.send_message("---Reopening UDP connection, RDT in action---", client.client_socket)
+                self.handler.send_message("---Proceeding to download file---", client.client_socket)
                 self.send_packets_selective_repeat(second_half_packets, addr, int(cut_list_index), True, udp_socket)
                 last_byte = self.get_last_file_bytes(file_path, True)
-                self.handler.send_message("--------FINISHED--------", client.client_socket)
-                self.handler.send_message(f"--------last byte is:{last_byte}--------", client.client_socket)
-                print(f"finished downloading the file. TOTAL TIME: {time.time() - start_time}")
+                self.handler.send_message("--FINISHED---", client.client_socket)
+                self.handler.send_message(f"---Last byte: {last_byte}---", client.client_socket)
+                total_time = format(time.time() - start_time, ".2f")
+                self.handler.send_message(f"---Finished downloading file. TOTAL TIME: {total_time}---",
+                                          client.client_socket)
                 udp_socket.close()
 
     """
