@@ -194,3 +194,5 @@ class ChatGUI:
             return True
         except:
             return False
+    def __del__(self):
+        self.button_action.handle_disconnect()

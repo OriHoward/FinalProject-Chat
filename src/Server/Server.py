@@ -97,7 +97,12 @@ class Server:
         start_time = time.time()
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_socket.bind((IP, client.udp_port))
-        data, addr = udp_socket.recvfrom(MSG_SIZE)
+        try:
+            udp_socket.settimeout(0.1)
+            data, addr = udp_socket.recvfrom(MSG_SIZE)
+        except:
+            udp_socket.close()
+            return
         if not self.check_reliablity(data, addr, udp_socket):
             udp_socket.close()
             return
@@ -186,10 +191,12 @@ class Server:
 
     def send_packets_selective_repeat(self, packets: list, addr, num, is_second_part, conn):
         num_of_packets = len(packets)
-        packets_to_append = 1
-        to_increase = 1
+        packets_to_append = 2
         done = False
         self.window = [0, 1, 2, 3]
+        next_packet = 4
+        skip = False
+        cut_window = 0
         conn.sendto(str(num_of_packets).encode(), addr)
         self.send_window(packets, addr, conn)
         while not done:
@@ -202,60 +209,65 @@ class Server:
                 done = True
             elif ack == -1:
                 packets_to_append = 1
-                to_increase = 1
-                # print("resending  ALL packets and RESET window size")
+                # TODO cut window in 2 if timeout and resend
+                print("resending  ALL packets and RESET window size")
                 self.send_window(packets, addr, conn)
             elif ack == expected_ack:
-                packets_to_append += to_increase
-                to_increase += 1
-                # print(f"packets to append is up to: {packets_to_append}")
-                # print(f"the new increase is up to: {to_increase}")
-                # print(f"ack received successfully: {ack}")
-                next_packet = self.window[-1] + 1
+                if skip:
+                    print(f"got ack : {ack} now removing from list")
+                    self.window.remove(self.window[0])
+                    if cut_window >= int(len(self.window)):
+                        skip = False
+                    continue
+                print(f"packets to append is up to: {packets_to_append}")
+                print(f"ack received successfully: {ack}")
                 if next_packet < len(packets):
                     conn.sendto(packets[next_packet], addr)
-                    self.window.remove(self.window[0])
-                    # print("sliding window..")
                     self.window.append(next_packet)
-                    # print(f"appending next packet : {self.window}")
-                self.append_packets(packets_to_append, packets, addr, conn)
+                    self.window.remove(self.window[0])
+                    next_packet += 1
+                    print("sliding window..")
+                    print(f"appending next packet : {self.window}")
+                for i in range(packets_to_append):
+                    if next_packet < len(packets):
+                        conn.sendto(packets[next_packet], addr)
+                        self.window.append(next_packet)
+                        next_packet += 1
+
             else:
-                packets_to_append -= to_increase
-                to_increase -= 1
-                # print(f"packets to append is down to: {packets_to_append}")
-                # print(f"new increase is down to: {to_increase}")
+                if not skip:
+                    skip = True
+                    cut_window = int(len(self.window) / 2)
+                print(f"packets to append is down to: {packets_to_append}")
                 if is_second_part:
                     ack_to_cut = self.window.index(ack - num)
                 else:
                     ack_to_cut = self.window.index(ack)
-                # print(f"ack received: {ack}")
+                print(f"ack received: {ack}")
                 resend = self.window[:ack_to_cut]
-                # print(f"resending: {resend}")
+                print(f"resending: {resend}")
                 self.resend_packets(packets, resend, addr, conn)
                 if ack_to_cut < len(self.window) - 1:
                     first_part = self.window[(ack_to_cut + 1):]
                     second_part = self.window[:ack_to_cut]
-                    last_part = first_part[-1] + 1
                     self.window = first_part + second_part
-                    if last_part < len(packets):
-                        self.window.append(last_part)
-                        conn.sendto(packets[last_part], addr)
-                    # print(f"new window : {self.window}")
                 else:
-                    self.window = self.window[:ack_to_cut].append(self.window[-1] + 1)
+                    self.window = self.window[:ack_to_cut]
 
     """
         appending new packets according to the window size
     """
 
-    def append_packets(self, packets_to_append, packets: list, addr, conn):
-        for i in range(packets_to_append):
-            next_packet = self.window[-1] + 1
-            if next_packet < len(packets):
-                conn.sendto(packets[next_packet], addr)
-                # print("adding packet to increase window..")
-                self.window.append(next_packet)
-                # print(f"window now is: {self.window}")
+    # def append_packets(self, packets_to_append, packets: list, addr, conn, next_packet):
+    #     for i in range(packets_to_append):
+    #         if next_packet < len(packets):
+    #             conn.sendto(packets[next_packet], addr)
+    #             self.window.append(next_packet)
+    #             print(f"this is the current size: {self.window}")
+    #             next_packet += 1
+    #             print(f"packet number in function: {next_packet}")
+    #             # print("adding packet to increase window..")
+    #             # print(f"window now is: {self.window}")
 
     """
         sends the whole window.
@@ -280,11 +292,14 @@ class Server:
     """
 
     def check_reliablity(self, data, addr, conn):
-        if data.decode() == "ACK":
-            conn.sendto("SYN".encode(), addr)
-            data, _ = conn.recvfrom(MSG_SIZE)
-            return True
-        return False
+        try:
+            if data.decode() == "ACK":
+                conn.sendto("SYN".encode(), addr)
+                conn.settimeout(0.1)
+                data, _ = conn.recvfrom(MSG_SIZE)
+                return True
+        except:
+            return False
 
     def get_udp_port(self):
         for port, unavailable in enumerate(self.udp_ports):
@@ -292,3 +307,7 @@ class Server:
                 self.udp_ports[port] = True
                 return 60000 + port
         return -1
+
+    def __del__(self):
+        print("DESTOYRED")
+        self.server.close()

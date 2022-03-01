@@ -19,7 +19,6 @@ class Client:
         self.user_name = user_name
         self.ip = ip
         self.tcp_address = (self.ip, GATEWAY_PORT_TCP)
-        # self.udp_address = (self.ip, GATEWAY_PORT_UDP)
         self.udp_address = None
         self.tcp_socket = None
         self.udp_socket = None
@@ -115,6 +114,7 @@ class Client:
                 self.send_private_msg(msg[2:], msg[1])
         elif msg[0][1:] == "commands":
             self.get_commands()
+
     """
         sends message to all clients in the chat
     """
@@ -168,13 +168,17 @@ class Client:
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         SocketHandler.send_enum(Actions.OPEN_UDP.value, self.tcp_socket)
         if self.check_reliablity():
-            self.udp_socket.sendto(file_name.encode(), self.udp_address)
-            if self.udp_socket.recvfrom(MSG_SIZE)[0].decode() == "w":
+            try:
+                self.udp_socket.sendto(file_name.encode(), self.udp_address)
+                self.udp_socket.settimeout(0.1)
+                if self.udp_socket.recvfrom(MSG_SIZE)[0].decode() == "w":
+                    self.close_udp_connection(self.udp_socket)
+            except:
                 self.close_udp_connection(self.udp_socket)
-                return
+                return False
         else:
             self.close_udp_connection(self.udp_socket)
-            return
+            return False
         self.get_packets(file_name)
         self.close_udp_connection(self.udp_socket)
         return True
@@ -189,18 +193,18 @@ class Client:
         next_expected_seq = 1
         num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
         print(f"number of expected packets received from server: {num_of_pkts}")
-        max_time_out = 0
+        # max_time_out = 0
         while arrived < int(num_of_pkts):
-            start_time = time.time()
+            # start_time = time.time()
             try:
                 curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
-                if time.time() - start_time > 0.02:
-                    max_time_out += 1
-                    print(f"max: {max_time_out}")
-                    if max_time_out == 3:
-                        self.udp_socket.sendto("-1".encode(), self.udp_address)
-                        continue
-                max_time_out = 0
+                # if time.time() - start_time > 0.02:
+                #     max_time_out += 1
+                #     print(f"max: {max_time_out}")
+                #     if max_time_out == 3:
+                #         self.udp_socket.sendto("-1".encode(), self.udp_address)
+                #         continue
+                # max_time_out = 0
                 curr_pkt = pickle.loads(curr_pkt)
                 seq_num = curr_pkt[0]
                 data_chunk = curr_pkt[1]
@@ -249,11 +253,12 @@ class Client:
 
     def check_reliablity(self):
         time.sleep(0.25)
-        self.udp_socket.sendto("ACK".encode(), self.udp_address)
-        msg = self.udp_socket.recvfrom(MSG_SIZE)[0]
-        if msg.decode() == "SYN":
+        try:
             self.udp_socket.sendto("ACK".encode(), self.udp_address)
-            return True
-        else:
-            self.udp_socket.close()
+            self.udp_socket.settimeout(0.1)
+            msg = self.udp_socket.recvfrom(MSG_SIZE)[0]
+            if msg.decode() == "SYN":
+                self.udp_socket.sendto("ACK".encode(), self.udp_address)
+                return True
+        except:
             return False
