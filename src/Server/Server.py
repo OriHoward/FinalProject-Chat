@@ -108,10 +108,10 @@ class Server:
         try:
             udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             udp_socket.bind((IP, client.udp_port))
+            udp_socket.settimeout(0.3)
         except:
             return
         try:
-            udp_socket.settimeout(0.3)
             data, addr = udp_socket.recvfrom(MSG_SIZE)
         except:
             udp_socket.close()
@@ -120,18 +120,11 @@ class Server:
             udp_socket.close()
             return
         try:
-            udp_socket.settimeout(0.4)
             file_name = udp_socket.recvfrom(MSG_SIZE)[0].decode()
         except:
             udp_socket.close()
             return
-        # if not self.handler.check_file_name(file_name):
-        #     self.handler.send_message("SERVER: file name not found, try again.", client.client_socket)
-        #     udp_socket.sendto("w".encode(), addr)
-        #     udp_socket.close()
-        #     return
         else:
-            # udp_socket.sendto("g".encode(), addr)
             file_path = f'ServerFiles/{file_name}'
             packets = self.create_packets_list(file_path)
             cut_list_index = len(packets) / 2
@@ -213,9 +206,9 @@ class Server:
         done = False
         self.window = [0, 1, 2, 3]
         next_packet = 4
-        # skip = False
-        # cut_window = 0
         ack = None
+        resend_tried = 0
+        conn.settimeout(0.2)
         conn.sendto(str(num_of_packets).encode(), addr)
         self.send_window(packets, addr, conn)
         while not done:
@@ -226,39 +219,33 @@ class Server:
                 expected_ack = self.window[0] + num
             else:
                 expected_ack = self.window[0]
-            conn.settimeout(0.3)
             try:
                 ack = int(conn.recvfrom(MSG_SIZE)[0].decode())
-            except:
-                print("TIMED OUT")
-                self.handle_timeout(conn)
-                print(f"resending {self.window}")
-                self.resend_packets(packets, self.window, addr, conn)
 
-            # elif ack == -1:
-            #     packets_to_append = 1
-            #     print("resending  ALL packets and RESET window size")
-            #     self.send_window(packets, addr, conn)
+            except:
+                # print("TIMED OUT")
+                # print(f"resending TIMEOUT {self.window}")
+                if resend_tried < 10:
+                    self.resend_packets(packets, self.window, addr, conn)
+                    resend_tried += 1
+                else:
+                    done = True
+
             if ack == expected_ack:
-                # if skip:
-                #     print(f"got ack : {ack} now removing from list")
-                #     self.window.remove(self.window[0])
-                #     if cut_window >= int(len(self.window)):
-                #         skip = False
-                #     continue
-                print(f"packets to append is up to: {packets_to_append}")
-                print(f"ack received successfully: {ack}")
+                resend_tried = 0
+                # print(f"packets to append is up to: {packets_to_append}")
+                # print(f"ack received successfully: {ack}")
                 if next_packet < len(packets):
                     conn.sendto(packets[next_packet], addr)
                     self.window.append(next_packet)
                     self.window.remove(self.window[0])
                     next_packet += 1
-                    print("sliding window..")
-                    print(f"appending next packet : {self.window}")
+                    # print("sliding window..")
+                    # print(f"appending next packet : {self.window}")
                 else:
-                    print("received packet but no farther inserts")
+                    # print("received packet but no farther inserts")
                     self.window.remove(self.window[0])
-                    print(f"window size is :::::::: {self.window}")
+                    # print(f"window size is :::::::: {self.window}")
                 for i in range(packets_to_append):
                     if next_packet < len(packets):
                         conn.sendto(packets[next_packet], addr)
@@ -266,19 +253,15 @@ class Server:
                         next_packet += 1
 
             else:
-                if ack < 0 or ack not in self.window:
+                if ack is None or ack < 0 or ack not in self.window:
                     continue
-                # if not skip:
-                #     skip = True
-                #     cut_window = int(len(self.window) / 2)
-                # print(f"packets to append is down to: {packets_to_append}")
                 if is_second_part:
                     ack_to_cut = self.window.index(ack - num)
                 else:
                     ack_to_cut = self.window.index(ack)
-                print(f"ack received: {ack}")
+                # print(f"ack received: {ack}")
                 resend = self.window[:ack_to_cut]
-                print(f"resending: {resend}")
+                # print(f"resending: {resend}")
                 self.resend_packets(packets, resend, addr, conn)
                 if ack_to_cut < len(self.window) - 1:
                     first_part = self.window[(ack_to_cut + 1):]
@@ -286,34 +269,11 @@ class Server:
                     self.window = first_part + second_part
                 else:
                     self.window = self.window[:ack_to_cut]
-                print(f"appending after resend: {self.window}")
-
-    def handle_timeout(self, conn):
-        curr_num_of_pkts = len(self.window)
-        counter = 0
-        while counter < curr_num_of_pkts:
-            try:
-                ack = int(conn.recvfrom(MSG_SIZE)[0].decode())
-                print(f"removing ack number: {ack}")
-                self.window.remove(ack)
-            except:
-                counter += 1
-                continue
+                # print(f"appending after resend: {self.window}")
 
     """
         appending new packets according to the window size
     """
-
-    # def append_packets(self, packets_to_append, packets: list, addr, conn, next_packet):
-    #     for i in range(packets_to_append):
-    #         if next_packet < len(packets):
-    #             conn.sendto(packets[next_packet], addr)
-    #             self.window.append(next_packet)
-    #             print(f"this is the current size: {self.window}")
-    #             next_packet += 1
-    #             print(f"packet number in function: {next_packet}")
-    #             # print("adding packet to increase window..")
-    #             # print(f"window now is: {self.window}")
 
     """
         sends the whole window.
@@ -341,7 +301,6 @@ class Server:
         try:
             if data.decode() == "ACK":
                 conn.sendto("SYN".encode(), addr)
-                conn.settimeout(0.1)
                 data, _ = conn.recvfrom(MSG_SIZE)
                 return True
         except:

@@ -179,13 +179,10 @@ class Client:
     def download_file(self, file_name):
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         SocketHandler.send_enum(Actions.OPEN_UDP.value, self.tcp_socket)
+        self.udp_socket.settimeout(0.3)
         if self.check_reliablity():
             try:
                 self.udp_socket.sendto(file_name.encode(), self.udp_address)
-                self.udp_socket.settimeout(0.3)
-                # if self.udp_socket.recvfrom(MSG_SIZE)[0].decode() == "w":
-                #     self.close_udp_connection(self.udp_socket)
-                #     return False
             except:
                 self.close_udp_connection(self.udp_socket)
                 return False
@@ -205,7 +202,6 @@ class Client:
     def get_packets(self, file_name):
         arrived = 0
         next_expected_seq = 1
-        self.udp_socket.settimeout(0.3)
         try:
             num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
         except:
@@ -213,7 +209,6 @@ class Client:
         print(f"number of expected packets received from server: {num_of_pkts}")
         while arrived < int(num_of_pkts):
             try:
-                self.udp_socket.settimeout(0.3)
                 curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
                 curr_pkt = pickle.loads(curr_pkt)
                 seq_num = curr_pkt[0]
@@ -268,7 +263,6 @@ class Client:
         time.sleep(0.25)
         try:
             self.udp_socket.sendto("ACK".encode(), self.udp_address)
-            self.udp_socket.settimeout(0.3)
             msg = self.udp_socket.recvfrom(MSG_SIZE)[0]
             if msg.decode() == "SYN":
                 self.udp_socket.sendto("ACK".encode(), self.udp_address)
