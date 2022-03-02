@@ -120,7 +120,7 @@ It has multiple functions that are necessary for each client to communicate with
 4) HandleThreads - handles the threads in the client side
 5) SocketHandler - this class responsible to send messages from the server and get messages from the server.
 6) RunClient - main to run the client
-7) RunMultipleClients = main to run multiple clients in a local network
+7) RunMultipleClients - main to run multiple clients in a local network
 
 # Server side
 The main class is the Server.py  
