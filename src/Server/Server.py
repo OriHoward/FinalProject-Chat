@@ -1,4 +1,3 @@
-import functools
 import os.path
 import pickle
 import socket
@@ -10,13 +9,11 @@ from Client import Client
 from HandleClients import HandleClients
 from SocketHandler import SocketHandler
 
-FORMAT = 'utf-8'
 GATEWAY_PORT_TCP = 50000
 GATEWAY_PORT_UDP = 60000
 MSG_SIZE = 50000
 IP = socket.gethostbyname(socket.gethostname())
 ADDR_TCP = (IP, GATEWAY_PORT_TCP)
-ADDR_UDP = (IP, GATEWAY_PORT_UDP)
 
 
 class Server:
@@ -67,7 +64,7 @@ class Server:
             print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
     """
-        handles each message from the client with case match
+        handles each message from the client
     """
 
     def handle_msg(self, msg, client):
@@ -223,8 +220,6 @@ class Server:
                 ack = int(conn.recvfrom(MSG_SIZE)[0].decode())
 
             except:
-                # print("TIMED OUT")
-                # print(f"resending TIMEOUT {self.window}")
                 if resend_tried < 10:
                     self.resend_packets(packets, self.window, addr, conn)
                     resend_tried += 1
@@ -233,19 +228,13 @@ class Server:
 
             if ack == expected_ack:
                 resend_tried = 0
-                # print(f"packets to append is up to: {packets_to_append}")
-                # print(f"ack received successfully: {ack}")
                 if next_packet < len(packets):
                     conn.sendto(packets[next_packet], addr)
                     self.window.append(next_packet)
                     self.window.remove(self.window[0])
                     next_packet += 1
-                    # print("sliding window..")
-                    # print(f"appending next packet : {self.window}")
                 else:
-                    # print("received packet but no farther inserts")
                     self.window.remove(self.window[0])
-                    # print(f"window size is :::::::: {self.window}")
                 for i in range(packets_to_append):
                     if next_packet < len(packets):
                         conn.sendto(packets[next_packet], addr)
@@ -259,9 +248,7 @@ class Server:
                     ack_to_cut = self.window.index(ack - num)
                 else:
                     ack_to_cut = self.window.index(ack)
-                # print(f"ack received: {ack}")
                 resend = self.window[:ack_to_cut]
-                # print(f"resending: {resend}")
                 self.resend_packets(packets, resend, addr, conn)
                 if ack_to_cut < len(self.window) - 1:
                     first_part = self.window[(ack_to_cut + 1):]
@@ -269,7 +256,6 @@ class Server:
                     self.window = first_part + second_part
                 else:
                     self.window = self.window[:ack_to_cut]
-                # print(f"appending after resend: {self.window}")
 
     """
         appending new packets according to the window size
@@ -314,5 +300,5 @@ class Server:
         return -1
 
     def __del__(self):
-        print("DESTOYRED")
+        print("Closing server..")
         self.server.close()

@@ -1,7 +1,9 @@
 import enum
+
 """
     Enum class for communicating with the server
 """
+
 
 class Actions(enum.Enum):
     USER_LIST = b'U'
@@ -14,4 +16,4 @@ class Actions(enum.Enum):
     COMMANDS = b'C'
     OPEN_UDP = b'S'
     CLOSE_UDP = b'E'
-    CHECK_FILE_NAME =b'K'
+    CHECK_FILE_NAME = b'K'

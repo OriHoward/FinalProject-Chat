@@ -6,10 +6,7 @@ import time
 from Actions import Actions
 from SocketHandler import SocketHandler
 
-FORMAT = 'utf-8'
 GATEWAY_PORT_TCP = 50000
-GATEWAY_PORT_UDP = 60000
-PREFIX = '/'
 MSG_SIZE = 64000
 DEFAULT_IP = socket.gethostbyname(socket.gethostname())
 
@@ -156,7 +153,6 @@ class Client:
             if taken_ports > 15:
                 print("couldn't find a free port within range - chat room is full")
                 exit(1)
-        self.reuse_socket = True
         return
 
     """
