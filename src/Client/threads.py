@@ -23,7 +23,10 @@ class HandleThreads:
         while self.display_chat.user.connected:
             try:
                 message = SocketHandler.get_msg(self.display_chat.user.tcp_socket)
-                self.display_chat.update_chat_display(message)
+                if message == "True" or message == "False":
+                    self.display_chat.user.get_msg(message)
+                else:
+                    self.display_chat.update_chat_display(message)
             except:
                 print("An error occurred in receive thread")
                 self.button_action.handle_disconnect()

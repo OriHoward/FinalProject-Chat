@@ -18,18 +18,20 @@ class ButtonsActions:
     def handle_file_download(self, file_name, file_window, btn_to_destory, btn_to_create):
         self.file_name = file_name
         if len(file_name) > 0:
-            while not self.display_chat.user.download_file(file_name):
-                continue
-            else:
-                file_window.destroy()
-                self.display_chat.swap_buttons(btn_to_destory, btn_to_create)
+            if self.display_chat.user.check_file_name(file_name):
+                while not self.display_chat.user.download_file(file_name):
+                    continue
+                else:
+                    file_window.destroy()
+                    self.display_chat.swap_buttons(btn_to_destory, btn_to_create)
 
     """
         handle the proceed button to proceed the file download for the client
     """
 
     def proceed_download(self):
-        self.display_chat.user.download_file(self.file_name)
+        while not self.display_chat.user.download_file(self.file_name):
+            continue
         self.display_chat.recreate_download_btn()
 
     """

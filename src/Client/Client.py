@@ -25,6 +25,7 @@ class Client:
         self.connected = False
         self.received_half_file = False
         self.packets_received = {}
+        self.is_file_exists = False
 
     """
         set the username for the client.
@@ -164,22 +165,35 @@ class Client:
         and only then transferring the file
     """
 
+    def check_file_name(self, file_name):
+        SocketHandler.send_enum(Actions.CHECK_FILE_NAME.value, self.tcp_socket)
+        SocketHandler.send_msg(file_name, self.tcp_socket)
+        time.sleep(0.1)
+        if self.is_file_exists == "True":
+            return True
+        return False
+
+    def get_msg(self, msg):
+        self.is_file_exists = msg
+
     def download_file(self, file_name):
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         SocketHandler.send_enum(Actions.OPEN_UDP.value, self.tcp_socket)
         if self.check_reliablity():
             try:
                 self.udp_socket.sendto(file_name.encode(), self.udp_address)
-                self.udp_socket.settimeout(0.1)
-                if self.udp_socket.recvfrom(MSG_SIZE)[0].decode() == "w":
-                    self.close_udp_connection(self.udp_socket)
+                self.udp_socket.settimeout(0.3)
+                # if self.udp_socket.recvfrom(MSG_SIZE)[0].decode() == "w":
+                #     self.close_udp_connection(self.udp_socket)
+                #     return False
             except:
                 self.close_udp_connection(self.udp_socket)
                 return False
         else:
             self.close_udp_connection(self.udp_socket)
             return False
-        self.get_packets(file_name)
+        if not self.get_packets(file_name):
+            return False
         self.close_udp_connection(self.udp_socket)
         return True
 
@@ -191,20 +205,16 @@ class Client:
     def get_packets(self, file_name):
         arrived = 0
         next_expected_seq = 1
-        num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
+        self.udp_socket.settimeout(0.3)
+        try:
+            num_of_pkts = self.udp_socket.recvfrom(MSG_SIZE)[0].decode()
+        except:
+            return False
         print(f"number of expected packets received from server: {num_of_pkts}")
-        # max_time_out = 0
         while arrived < int(num_of_pkts):
-            # start_time = time.time()
             try:
+                self.udp_socket.settimeout(0.3)
                 curr_pkt = self.udp_socket.recvfrom(MSG_SIZE)[0]
-                # if time.time() - start_time > 0.02:
-                #     max_time_out += 1
-                #     print(f"max: {max_time_out}")
-                #     if max_time_out == 3:
-                #         self.udp_socket.sendto("-1".encode(), self.udp_address)
-                #         continue
-                # max_time_out = 0
                 curr_pkt = pickle.loads(curr_pkt)
                 seq_num = curr_pkt[0]
                 data_chunk = curr_pkt[1]
@@ -216,13 +226,16 @@ class Client:
                     print(f"packet number {seq_num} received, sending ACK...", )
             except Exception as e:
                 print(e)
+                continue
         self.udp_socket.sendto(f"-10".encode(), self.udp_address)
         print("RECEIVED ALL PACKETS SUCCESSFULLY")
         if not self.received_half_file:
             self.received_half_file = True
-            return
-        self.write_files(self.packets_received, file_name)
-        self.received_half_file = False
+            return True
+        else:
+            self.write_files(self.packets_received, file_name)
+            self.received_half_file = False
+            return True
 
     """
         this function writes the file in the correct order with all the packets we have received
@@ -255,7 +268,7 @@ class Client:
         time.sleep(0.25)
         try:
             self.udp_socket.sendto("ACK".encode(), self.udp_address)
-            self.udp_socket.settimeout(0.1)
+            self.udp_socket.settimeout(0.3)
             msg = self.udp_socket.recvfrom(MSG_SIZE)[0]
             if msg.decode() == "SYN":
                 self.udp_socket.sendto("ACK".encode(), self.udp_address)

@@ -14,3 +14,4 @@ class Actions(enum.Enum):
     COMMANDS = b'C'
     OPEN_UDP = b'S'
     CLOSE_UDP = b'E'
+    CHECK_FILE_NAME =b'K'
