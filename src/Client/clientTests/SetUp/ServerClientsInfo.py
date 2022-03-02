@@ -1,4 +1,4 @@
-class Client:
+class ServerClientsInfo:
     def __init__(self, client_socket, user_name, addr):
         self.client_socket = client_socket
         self.user_name = user_name

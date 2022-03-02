@@ -2,10 +2,10 @@ import socket
 import threading
 
 from Actions import Actions
-from Client import Client
 
 from SocketHandler import SocketHandler
 from clientTests.SetUp.HandleClients import HandleClients
+from clientTests.SetUp.ServerClientsInfo import ServerClientsInfo
 
 FORMAT = 'utf-8'
 GATEWAY_PORT_TCP = 50000
@@ -22,12 +22,12 @@ class FakeServer:
         self.server.bind(ADDR_TCP)
         self.handler = HandleClients()
 
-    def handle_client(self, conn, addr, curr_client: Client):
+    def handle_client(self, conn, addr, curr_client):
         print(f"[NEW CONNECTION] {addr} connected.")
         while curr_client.is_connected:
             action_msg = SocketHandler.get_enum(conn)
             if action_msg:
-                self.handle_msg(action_msg, curr_client)
+                self.handle_msg(action_msg,curr_client)
         conn.close()
 
     def start(self):
@@ -36,7 +36,7 @@ class FakeServer:
         while True:
             conn, addr = self.server.accept()
             curr_name = SocketHandler.get_msg(conn)
-            new_client = Client(conn, curr_name, addr)
+            new_client = ServerClientsInfo(conn, curr_name, addr)
             self.handler.add_client(new_client)
             tcp_thread = threading.Thread(target=self.handle_client, args=(conn, addr, new_client), daemon=True)
             tcp_thread.start()
@@ -54,7 +54,5 @@ class FakeServer:
             case Actions.MESSAGE_ALL.value:
                 msg_to_distribute = SocketHandler.get_msg(client.client_socket)
                 self.handler.send_all(msg_to_distribute)
-            case Actions.FILE_LIST.value:
-                self.handler.send_file_list(client)
             case Actions.COMMANDS.value:
                 self.handler.send_commands_list(client)

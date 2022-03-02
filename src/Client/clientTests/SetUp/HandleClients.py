@@ -1,7 +1,7 @@
 import os
 import socket
 
-from Client import Client
+from ServerClientsInfo import ServerClientsInfo
 from SocketHandler import SocketHandler
 
 GATEWAY_PORT = 50000
@@ -15,13 +15,13 @@ ADDR = (IP, GATEWAY_PORT)
 
 class HandleClients:
     def __init__(self):
-        self.clients: dict[str, Client] = {}
+        self.clients: dict[str, ServerClientsInfo] = {}
 
     """
         adding a client
     """
 
-    def add_client(self, client: Client):
+    def add_client(self, client: ServerClientsInfo):
         self.clients[client.user_name] = client
 
     """
@@ -35,7 +35,7 @@ class HandleClients:
         removes client from the dict
     """
 
-    def remove_client(self, client: Client):
+    def remove_client(self, client: ServerClientsInfo):
         self.clients.pop(client.user_name, None)
 
     """
@@ -70,7 +70,7 @@ class HandleClients:
         to other client in private
     """
 
-    def handle_private_msg(self, client: Client):
+    def handle_private_msg(self, client: ServerClientsInfo):
         dst_client_user_name = SocketHandler.get_msg(client.client_socket)
         if self.clients.get(dst_client_user_name) is None:
             SocketHandler.send_msg(f"SERVER: Client {dst_client_user_name} is not connected", client.client_socket)
@@ -114,7 +114,7 @@ class HandleClients:
        returns the commands list to a client
     """
 
-    def send_commands_list(self, client: Client):
+    def send_commands_list(self, client: ServerClientsInfo):
         msg = "SERVER:\n" \
               "/users - get a list of all connected users\n" \
               "/disconnect - disconnect from chat\n" \
