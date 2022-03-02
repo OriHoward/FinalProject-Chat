@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 import ButtonActions
-import threads
+import HandleThreads
 from Actions import Actions
 from SocketHandler import SocketHandler
 from Client import Client
@@ -29,7 +29,7 @@ class ChatGUI:
         self.entry_address.place(relwidth=0.4, relheight=0.12, relx=0.35, rely=0.4)
         self.entry_name.focus()
         self.button_action = ButtonActions.ButtonsActions(self)
-        self.thread = threads.HandleThreads(self, self.button_action)
+        self.thread = HandleThreads.HandleThreads(self, self.button_action)
         self.user = user
         self.btn = Button(self.login, text="CONTINUE", font="Helvetica 14 bold",
                           command=lambda: self.validation(self.entry_name.get(), self.entry_address.get()))
