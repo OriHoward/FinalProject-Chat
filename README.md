@@ -62,7 +62,9 @@ The server takes care of all the clients requests, and the clients can communica
 Every message sent in Chat is going through the server which knows how to distribute the message to all the connected
 users.  
 In addition, we were asked to add an option for the client to download a file through a UDP socket.  
-The UDP socket needs to be reliable and FAST. That is why I choose to implement the Selective Repeat Algorithm.
+The UDP socket needs to be reliable and FAST. That is why I choose to implement the Selective Repeat Algorithm.  
+The 'three way handshake' was also implemented in the UDP connection to make sure it is more reliable and
+only after that we start sending the packets to the client to receive.
 
 ### How Does it work?
 

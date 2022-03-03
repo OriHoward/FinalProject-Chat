@@ -46,20 +46,6 @@ class TestClient(TestCase):
         cls.assertEqual(expected_list, list_of_clients)
         time.sleep(1)
 
-    # def test_send_private_msg(cls):
-    #     cls.first_user.connect()
-    #     cls.second_user.connect()
-    #     time.sleep(0.1)
-    #     cls.first_user.send_private_msg("hello!", "Avi")
-    #     time.sleep(0.1)
-    #     first_user_msg_back = SocketHandler.get_msg(cls.first_user.tcp_socket)
-    #     expected_first_user_msg = "to Avi: h e l l o !"
-    #     second_user_msg_back = SocketHandler.get_msg(cls.second_user.tcp_socket)
-    #     time.sleep(0.1)
-    #     expected_second_user_msg = "from Ori: h e l l o !"
-    #     cls.assertEqual(expected_first_user_msg, first_user_msg_back)
-    #     cls.assertEqual(expected_second_user_msg, second_user_msg_back)
-    #     time.sleep(2)
 
     @classmethod
     def tearDownClass(cls) -> None:
