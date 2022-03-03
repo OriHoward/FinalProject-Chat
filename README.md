@@ -11,12 +11,14 @@ Python version 3.10
 ## How to Run the Code:
 
 First run the server side:
+* Make sure you are inside the Server folder
 
 ```shell
 python3 RunServer.py
 ```
 
 Then run the client side:
+* Make sure you are inside the Client folder
 
 ```shell
 python3 RunClient.py
