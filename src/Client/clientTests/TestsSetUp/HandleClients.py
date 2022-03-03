@@ -1,12 +1,11 @@
 import os
 import socket
 
-from ServerClientsInfo import ServerClientsInfo
+from ServerClient import ServerClient
 from SocketHandler import SocketHandler
 
 GATEWAY_PORT = 50000
 IP = socket.gethostbyname(socket.gethostname())
-ADDR = (IP, GATEWAY_PORT)
 
 """
     This class handles all the clients requests from the server
@@ -15,13 +14,13 @@ ADDR = (IP, GATEWAY_PORT)
 
 class HandleClients:
     def __init__(self):
-        self.clients: dict[str, ServerClientsInfo] = {}
+        self.clients: dict[str, ServerClient] = {}
 
     """
         adding a client
     """
 
-    def add_client(self, client: ServerClientsInfo):
+    def add_client(self, client: ServerClient):
         self.clients[client.user_name] = client
 
     """
@@ -35,7 +34,7 @@ class HandleClients:
         removes client from the dict
     """
 
-    def remove_client(self, client: ServerClientsInfo):
+    def remove_client(self, client: ServerClient):
         self.clients.pop(client.user_name, None)
 
     """
@@ -61,16 +60,15 @@ class HandleClients:
         client_list = ""
         for client in self.get_clients():
             client_list += f"{client},"
-            print(client)
         client_list = client_list[:len(client_list) - 1]
-        SocketHandler.send_msg(client_list, conn)
+        SocketHandler.send_msg(f"SERVER: Connected users: {client_list}", conn)
 
     """
         handles the private message - getting a message from the one client and sending it 
         to other client in private
     """
 
-    def handle_private_msg(self, client: ServerClientsInfo):
+    def handle_private_msg(self, client: ServerClient):
         dst_client_user_name = SocketHandler.get_msg(client.client_socket)
         if self.clients.get(dst_client_user_name) is None:
             SocketHandler.send_msg(f"SERVER: Client {dst_client_user_name} is not connected", client.client_socket)
@@ -104,17 +102,17 @@ class HandleClients:
         returns the file list to a client
     """
 
-    # def send_file_list(self, client: Client):
-    #     files_path = os.path.abspath("../../../Server/ServerFiles")
-    #     files_list = os.listdir(files_path)
-    #     msg = f"SERVER: Server file list: {str(files_list)}"
-    #     SocketHandler.send_msg(msg, client.client_socket)
+    def send_file_list(self, client: ServerClient):
+        files_path = os.path.abspath("ServerFiles")
+        files_list = os.listdir(files_path)
+        msg = f"SERVER: Server file list: {str(files_list)}"
+        SocketHandler.send_msg(msg, client.client_socket)
 
     """
        returns the commands list to a client
     """
 
-    def send_commands_list(self, client: ServerClientsInfo):
+    def send_commands_list(self, client: ServerClient):
         msg = "SERVER:\n" \
               "/users - get a list of all connected users\n" \
               "/disconnect - disconnect from chat\n" \

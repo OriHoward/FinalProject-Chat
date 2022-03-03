@@ -3,8 +3,8 @@ import time
 from unittest import TestCase
 
 from Client import Client
+from FakeServer import FakeServer
 from SocketHandler import SocketHandler
-from clientTests.SetUp.FakeServer import FakeServer
 
 """
 those tests check both the client and the server and the communication between them
@@ -13,7 +13,7 @@ The GUI is tested as well with error messages
 """
 
 
-class TestClient(TestCase):
+class Test(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.server = FakeServer()
@@ -40,12 +40,16 @@ class TestClient(TestCase):
         cls.first_user.connect()
         cls.second_user.connect()
         time.sleep(0.2)
+        try:
+            junk = SocketHandler.get_msg(cls.first_user.tcp_socket)
+        except:
+            print()
+        time.sleep(0.2)
         cls.first_user.get_users()
         list_of_clients = SocketHandler.get_msg(cls.first_user.tcp_socket)
-        expected_list = "Ori,Avi"
+        expected_list = "SERVER: Connected users: Ori,Avi"
         cls.assertEqual(expected_list, list_of_clients)
         time.sleep(1)
-
 
     @classmethod
     def tearDownClass(cls) -> None:

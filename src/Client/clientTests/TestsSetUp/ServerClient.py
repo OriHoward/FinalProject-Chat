@@ -1,8 +1,9 @@
-class ServerClientsInfo:
-    def __init__(self, client_socket, user_name, addr):
+class ServerClient:
+    def __init__(self, client_socket, user_name, addr, udp_port):
         self.client_socket = client_socket
         self.user_name = user_name
         self.address = addr
+        self.udp_port = udp_port
         self.is_connected = True
         self.new_msgs = []
         self.received_half_file = False
