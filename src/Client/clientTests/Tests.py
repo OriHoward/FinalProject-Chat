@@ -13,7 +13,7 @@ The GUI is tested as well with error messages
 """
 
 
-class Test(TestCase):
+class Tests(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.server = FakeServer()
@@ -27,29 +27,39 @@ class Test(TestCase):
         time.sleep(0.1)
         cls.assertTrue(cls.first_user.is_connected())
         cls.first_user.disconnect()
-        time.sleep(1)
+        time.sleep(0.5)
 
     def test_disconnect(cls):
         cls.first_user.connect()
         cls.first_user.disconnect()
         time.sleep(0.1)
         cls.assertFalse(cls.first_user.is_connected())
-        time.sleep(1)
+        time.sleep(0.5)
 
-    def test_get_users(cls):
+    def test_set_username(cls):
         cls.first_user.connect()
+        time.sleep(0.1)
+        cls.first_user.set_username("Shlomi")
+        cls.assertEqual("Shlomi", cls.first_user.user_name)
+        cls.first_user.set_username("Ori")
+        cls.assertEqual("Ori", cls.first_user.user_name)
+
+    def test_get_commands(cls):
         cls.second_user.connect()
-        time.sleep(0.2)
+        time.sleep(0.1)
         try:
-            junk = SocketHandler.get_msg(cls.first_user.tcp_socket)
+            junk = SocketHandler.get_msg(cls.second_user.tcp_socket)
         except:
             print()
-        time.sleep(0.2)
-        cls.first_user.get_users()
-        list_of_clients = SocketHandler.get_msg(cls.first_user.tcp_socket)
-        expected_list = "SERVER: Connected users: Ori,Avi"
-        cls.assertEqual(expected_list, list_of_clients)
-        time.sleep(1)
+        cls.second_user.get_commands()
+        time.sleep(0.1)
+        commands = SocketHandler.get_msg(cls.second_user.tcp_socket)
+        expected = "SERVER:\n" \
+                   "/users - get a list of all connected users\n" \
+                   "/disconnect - disconnect from chat\n" \
+                   "/files - get a list of all the files\n" \
+                   "/whisper <client name> <msg> - send a private message to another user"
+        cls.assertEqual(expected, commands)
 
     @classmethod
     def tearDownClass(cls) -> None:
