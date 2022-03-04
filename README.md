@@ -3,7 +3,7 @@
 ### code written by Ori Howard
 
 [comment]: <> (![Alt Text]&#40;https://media.giphy.com/media/0SVFGSQcWrFPL0cxcQ/giphy.gif&#41;)
-<img src="https://media.giphy.com/media/0SVFGSQcWrFPL0cxcQ/giphy.gif" width="800" height="" />
+<img src="https://media.giphy.com/media/0SVFGSQcWrFPL0cxcQ/giphy.gif" width="600" height="" />
 
 ## Requirements:
 
