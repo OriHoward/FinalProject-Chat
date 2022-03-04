@@ -1,7 +1,10 @@
 # FinalProject-Chat
 
 ### code written by Ori Howard
-![Alt Text](https://media.giphy.com/media/0SVFGSQcWrFPL0cxcQ/giphy.gif)
+
+[comment]: <> (![Alt Text]&#40;https://media.giphy.com/media/0SVFGSQcWrFPL0cxcQ/giphy.gif&#41;)
+<img src="https://media.giphy.com/media/0SVFGSQcWrFPL0cxcQ/giphy.gif" width="800" height="" />
+
 ## Requirements:
 
 Windows 10 - pip install tk  
