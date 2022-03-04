@@ -125,7 +125,7 @@ It has multiple functions that are necessary for each client to communicate with
 2) ButtonActions - responsible for the GUI buttons action.
 3) ChatGUI - the Graphic User Interface class.
 4) HandleThreads - handles the threads in the client side
-5) SocketHandler - this class responsible to send messages from the server and get messages from the server.
+5) SocketHandler - this class responsible to send messages from the server and get messages to the server.
 6) RunClient - main to run the client
 7) RunMultipleClients - main to run multiple clients in a local network
 
@@ -136,7 +136,7 @@ Those functions are explained in detail in the code itself
 
 ### The server has the following classes as well:
 1) Actions - has special enums so that the server and the server client have a common language.
-2) SocketHandler - this class responsible to send messages from the server and get messages from the server.
+2) SocketHandler - this class responsible to send messages from the server and get messages to the server.
 3) Client - The server saves all the information (connection for example) he has with each client in this class.
 4) HandleClients - responsible to handle with all the clients requests.
 5) RunServer - main to run the server
